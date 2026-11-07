@@ -86,8 +86,8 @@ def default_axes(ex):
         ey = _normalize(raw)
     else:
         warnings.append(
-            "Stab parallel zur globalen Z-Achse. "
-            "Code_Aster legt lokales Y parallel zum globalen Y (ANGL_VRIL = 0)."
+            "Beam is parallel to the global Z axis. "
+            "Code_Aster puts local Y parallel to global Y (ANGL_VRIL = 0)."
         )
         ey = _normalize(_sub(_Y, _scale(ex, _dot(_Y, ex))))
         if ey is None:
@@ -121,7 +121,7 @@ def local_frame(ex, orientation: Orientation):
     if cara in ("VECT_Y", "VECT_Z", "VECT_MAIL_Y", "VECT_MAIL_Z"):
         vector = orientation.vector
         if not vector or len(vector) < 3:
-            warnings.append(cara + " ohne drei VALE-Komponenten. Standardrahmen bleibt.")
+            warnings.append(cara + " needs three VALE components. The default frame is kept.")
             return ey, ez, warnings
         vector = (float(vector[0]), float(vector[1]), float(vector[2]))
         tangential = _dot(vector, ex)
@@ -129,12 +129,12 @@ def local_frame(ex, orientation: Orientation):
         if _norm(projected) <= 1e-8 * max(_norm(vector), 1e-15):
             warnings.append(
                 cara
-                + " ist parallel zum Stab. Die Projektion auf die Schnittebene ist null. "
-                "Code_Aster weist das ab. Gezeigt wird der Standardrahmen."
+                + " is parallel to the beam. Its projection onto the cross-section is zero. "
+                "Code_Aster rejects that. The default frame is shown."
             )
             return ey, ez, warnings
         # VECT ersetzt den Standardrahmen, der Z-Hinweis gilt dann nicht.
-        warnings = [w for w in warnings if "parallel zur globalen Z-Achse" not in w]
+        warnings = [w for w in warnings if "parallel to the global Z axis" not in w]
         if cara in ("VECT_Y", "VECT_MAIL_Y"):
             ey = _normalize(projected)
             ez = _normalize(_cross(ex, ey))
@@ -146,12 +146,12 @@ def local_frame(ex, orientation: Orientation):
         if cara.startswith("VECT_MAIL"):
             warnings.append(
                 cara
-                + ": der Winkel zwischen Faser-Netz und Hauptachsen aus MACR_CARA_POUTRE "
-                "wird nicht aufgeschlagen. Gezeigt wird die Netzachse der Vorgabe."
+                + ": the angle between the fibre mesh and the principal axes from MACR_CARA_POUTRE "
+                "is not applied. The mesh axis of the given vector is shown."
             )
         return ey, ez, warnings
 
     warnings.append(
-        "Orientierung " + cara + " gilt nicht für SEG2-Balken und wird ignoriert."
+        "Orientation " + cara + " does not apply to SEG2 beams and is ignored."
     )
     return ey, ez, warnings

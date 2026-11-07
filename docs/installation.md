@@ -1,79 +1,79 @@
 # Installation
 
-Das Plugin ist reines Python. Es braucht kein Kompilieren. SALOME muss geschlossen sein, während die Dateien kopiert werden.
+The plugin is plain Python. Nothing has to be compiled. SALOME must be closed while the files are copied.
 
-## Dateien
+## Files
 
-SALOME lädt in jedem Plugin-Verzeichnis genau eine Datei `salome_plugins.py`. Daneben muss das Paket `beamcheck/` liegen, weil `salome_plugins.py` es über denselben Ordner importiert.
+SALOME loads exactly one `salome_plugins.py` from each plugin directory. The package `beamcheck/` must sit next to it, because `salome_plugins.py` imports it from that folder. The beam icon is `beamcheck/icons/beam.png`.
 
-| Datei oder Ordner | Pflicht |
+| File or folder | Required |
 | --- | --- |
-| `salome_plugins.py` | ja |
-| `beamcheck/` | ja |
-| `beispiele/` | nein, nur zum Ausprobieren |
-| `tests/` | nein |
+| `salome_plugins.py` | yes |
+| `beamcheck/` | yes |
+| `beispiele/` | no, only for trying the example |
+| `tests/` | no |
 
-## Weg 1 — eigenes Verzeichnis (empfohlen)
+## Way 1 — own directory (recommended)
 
-Ein vorhandenes `~/.config/salome/Plugins/salome_plugins.py` wird so nicht überschrieben.
+This does not overwrite an existing `~/.config/salome/Plugins/salome_plugins.py`.
 
 ```bash
 mkdir -p "$HOME/salome/plugins/balkenkontrolle"
 cp -a salome_plugins.py beamcheck "$HOME/salome/plugins/balkenkontrolle/"
 ```
 
-In der Umgebung, in der SALOME startet:
+In the environment that starts SALOME:
 
 ```bash
 export SALOME_PLUGINS_PATH="$HOME/salome/plugins/balkenkontrolle${SALOME_PLUGINS_PATH:+:$SALOME_PLUGINS_PATH}"
 ```
 
-Die Zeile gehört in die Shell-Datei, aus der SALOME gestartet wird, oder in das SALOME-Startskript. Danach SALOME neu starten.
+Put that line in the shell file from which SALOME is started, or in the SALOME launch script. Then restart SALOME.
 
-## Weg 2 — Benutzer-Plugins
+## Way 2 — user plugins
 
-Nur verwenden, wenn unter `~/.config/salome/Plugins/` noch keine `salome_plugins.py` liegt. Eine vorhandene Datei enthält andere Erweiterungen. Sie nicht ersetzen. Dann Weg 1 nehmen oder den Registrierungsblock aus `salome_plugins.py` unten an die bestehende Datei hängen und `beamcheck/` daneben kopieren.
+Use this only when `~/.config/salome/Plugins/` does not already contain a `salome_plugins.py`. An existing file holds other extensions. Do not replace it. Use way 1, or append the registration block from `salome_plugins.py` to the existing file and copy `beamcheck/` beside it.
 
 ```bash
 mkdir -p "$HOME/.config/salome/Plugins"
 cp -a salome_plugins.py beamcheck "$HOME/.config/salome/Plugins/"
 ```
 
-## Weg 3 — AsterStudy-Pluginordner
+## Way 3 — AsterStudy plugin folder
 
 ```text
 <ASTERSTUDY_ROOT>/share/salome/plugins/asterstudy/
 ```
 
-Dafür sind Schreibrechte auf die SALOME-Installation nötig. Nach einem Update der Distribution ist die Datei weg. Weg 1 ist dauerhafter.
+This needs write access to the SALOME installation. A distribution update removes the file. Way 1 lasts longer.
 
 ## Start
 
-SALOME neu starten, nicht nur das Modul wechseln. Plugin-Dateien werden beim Start gelesen.
+Restart SALOME. Switching modules is not enough. Plugin files are read at startup.
 
-Modul **AsterStudy** öffnen. Der Eintrag liegt unter
+Open the **AsterStudy** module. The entry is under
 
-**Werkzeuge → Erweiterungen → Balkenkontrolle (Orientierung und Querschnitt)**.
+**Tools → Extensions → Beam check (orientation and section)**.
 
-In der Menüleiste von AsterStudy steht der Schalter **Balken**. Ein Klick zeigt die Balken der aktiven Studie, der nächste blendet sie aus.
+The AsterStudy menu bar shows **Beams**, with an I-beam icon. One click shows the beams of the active study, the next hides them.
 
-Fehlt der Eintrag:
+If the entry is missing:
 
-* Liegt `salome_plugins.py` wirklich in dem Verzeichnis, das SALOME durchsucht, und nicht eine Ebene darüber?
-* Wurde eine zweite `salome_plugins.py` aus einem anderen Pfad geladen und diese hier nie erreicht?
-* Steht im SALOME-Protokoll ein Importfehler aus `beamcheck`? Dann fehlt das Paket neben der Plugin-Datei, oder die Python-Version ist älter als 3.7.
+* Is `salome_plugins.py` in a directory SALOME actually searches, and not one level above it?
+* Was another `salome_plugins.py` loaded from a different path, so this one was never reached?
+* Does the SALOME log report an import error from `beamcheck`? Then the package is not next to the plugin file, or Python is older than 3.7.
 
-## Abhängigkeiten zur Laufzeit
+## Runtime dependencies
 
-| Umgebung | Was gebraucht wird |
+| Environment | What is needed |
 | --- | --- |
-| Dialog | PyQt5, ersatzweise PyQt6, beides kommt mit SALOME |
-| Darstellung | SMESH, sichtbar in der AsterStudy-Ansicht |
-| MED-Netz | MEDLoader, Teil von SALOME |
-| ASTER-mail | keine Zusatzbibliothek |
-| Unit-Tests | Python 3.7 oder neuer, ohne SALOME |
+| Dialog | PyQt5, or PyQt6, both ship with SALOME |
+| Display | SMESH, shown in the AsterStudy view |
+| MED mesh | MEDLoader, part of SALOME |
+| ASTER mail | no extra library |
+| Unit tests | Python 3.7 or newer, without SALOME |
 
-Getestet ist der Kern ohne GUI:
+The core is tested without the GUI:
 
 ```bash
 python3 -m unittest tests/test_beamcheck.py

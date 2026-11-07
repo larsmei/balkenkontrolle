@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-"""SALOME-Plugin: Balkenorientierung und Querschnitte zur Kontrolle.
+"""SALOME plugin: beam orientation and cross-sections for checking.
 
-Ablage (eine der drei Möglichkeiten), danach SALOME neu starten:
+Copy the files (one of the three places), then restart SALOME:
 
 * ~/.config/salome/Plugins/
-* $SALOME_PLUGINS_PATH  (dieses Verzeichnis)
+* $SALOME_PLUGINS_PATH  (this directory)
 * <ASTERSTUDY_ROOT>/share/salome/plugins/asterstudy/
 
-Der Menüpunkt liegt unter Werkzeuge → Erweiterungen
-(„Balkenkontrolle (Orientierung und Querschnitt)“).
+The menu entry is under Tools → Extensions
+("Beam check (orientation and section)").
 """
 
 import os
@@ -20,10 +20,10 @@ if _HERE not in sys.path:
 
 import salome_pluginsmanager
 
-_TITLE = "Balkenkontrolle (Orientierung und Querschnitt)"
+_TITLE = "Beam check (orientation and section)"
 _HELP = (
-    "Zeigt lokale Balkenachsen (X rot, Y grün, Z blau) und die Querschnitte "
-    "aus AFFE_CARA_ELEM in der AsterStudy-Ansicht. Regeln nach Code_Aster U4.42.01."
+    "Shows local beam axes (X red, Y green, Z blue) and the cross-sections "
+    "from AFFE_CARA_ELEM in the AsterStudy view. Rules follow Code_Aster U4.42.01."
 )
 
 

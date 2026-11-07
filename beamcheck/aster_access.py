@@ -80,7 +80,7 @@ def _import_live_gui():
                 return gui
     detail = "; ".join(errors[:3])
     raise RuntimeError(
-        "AsterStudy-GUI nicht gefunden. Das Modul muss geöffnet sein"
+        "AsterStudy GUI was not found. The module must be open"
         + (" ({})".format(detail) if detail else ".")
     )
 
@@ -236,10 +236,10 @@ def read_case(gui):
     """``{text, files}`` aus einem bereits erzeugten AsterGui."""
     study = _unwrap(getattr(gui, "study", None))
     if study is None:
-        raise RuntimeError("AsterStudy hat keine geöffnete Studie.")
+        raise RuntimeError("AsterStudy has no open study.")
     history = _unwrap(getattr(study, "history", None))
     if history is None:
-        raise RuntimeError("Die AsterStudy-Studie hat keine History.")
+        raise RuntimeError("The AsterStudy study has no history.")
     case = _unwrap(getattr(history, "current_case", None))
     if case is None:
         cases = _unwrap(getattr(history, "cases", None)) or []
@@ -248,7 +248,7 @@ def read_case(gui):
         except TypeError:
             case = None
     if case is None:
-        raise RuntimeError("Kein aktueller AsterStudy-Fall.")
+        raise RuntimeError("There is no current AsterStudy case.")
     texts = []
     files = []
     for stage in _stages_of(case):
@@ -258,8 +258,8 @@ def read_case(gui):
         files.extend(stage_files(stage, history))
     if not texts:
         raise RuntimeError(
-            "Der Fall enthält keinen lesbaren Kommando-Text. "
-            "Die Stufe muss Befehle enthalten, grafisch oder als Text."
+            "The case has no readable command text. "
+            "The stage must contain commands, graphical or as text."
         )
     return {"text": "\n\n".join(texts), "files": files}
 
@@ -330,7 +330,7 @@ def list_smesh_meshes():
             continue
         if count <= 0:
             continue
-        name = sobj.GetName() or "Netz"
+        name = sobj.GetName() or "Mesh"
         key = (name, count, mesh.GetId() if hasattr(mesh, "GetId") else id(mesh))
         if key in seen:
             continue

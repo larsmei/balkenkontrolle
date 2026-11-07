@@ -54,7 +54,7 @@ def read_mail(text):
         if mode == "COOR_3D":
             parts = line.split()
             if len(parts) < 4:
-                raise MeshError("COOR_3D-Zeile unvollständig: {}".format(line))
+                raise MeshError("Incomplete COOR_3D line: {}".format(line))
             nodes[parts[0]] = (
                 _fortran_float(parts[1]),
                 _fortran_float(parts[2]),
@@ -63,7 +63,7 @@ def read_mail(text):
         elif mode in ("SEG2", "SEG3"):
             parts = line.split()
             if len(parts) < 3:
-                raise MeshError("{}-Zeile unvollständig: {}".format(mode, line))
+                raise MeshError("Incomplete {} line: {}".format(mode, line))
             # Code_Aster: SEG3-Endknoten sind die beiden ersten Nummern.
             elements[parts[0]] = (parts[1], parts[2])
         elif mode == "GROUP_MA":
@@ -73,7 +73,7 @@ def read_mail(text):
                 groups.setdefault(current_group, [])
                 continue
             if current_group is None:
-                raise MeshError("GROUP_MA ohne Gruppenname vor: {}".format(line))
+                raise MeshError("GROUP_MA without a group name before: {}".format(line))
             for token in parts:
                 if token not in elements and len(parts) == 1:
                     current_group = token
@@ -83,7 +83,7 @@ def read_mail(text):
         elif mode == "GROUP_NO":
             continue
     if not elements:
-        raise MeshError("Die mail-Datei enthält keine SEG2/SEG3.")
+        raise MeshError("The mail file contains no SEG2/SEG3.")
     membership = {}
     for gname, mails in groups.items():
         for mail in mails:
@@ -96,7 +96,7 @@ def read_mail(text):
             continue
         edges.append(Edge(name, nodes[n1], nodes[n2], tuple(membership.get(name, ()))))
     if missing:
-        raise MeshError("Knoten fehlen für Elemente: {}".format(", ".join(missing[:8])))
+        raise MeshError("Nodes are missing for elements: {}".format(", ".join(missing[:8])))
     return edges
 
 
@@ -129,7 +129,7 @@ def _as_points(raw):
         return [
             (float(raw.getIJ(i, 0)), float(raw.getIJ(i, 1)), float(raw.getIJ(i, 2))) for i in range(count)
         ]
-    raise MeshError("Koordinaten der MED-Datei sind nicht lesbar.")
+    raise MeshError("Coordinates in the MED file could not be read.")
 
 
 def _flat_ints(raw):
@@ -343,7 +343,7 @@ def _edges_from_med(ml, path, name):
         if found:
             return found
         if errors:
-            raise MeshError("MED-Netz '{}': {}".format(name, "; ".join(errors[:4])))
+            raise MeshError("MED mesh '{}': {}".format(name, "; ".join(errors[:4])))
         return []
 
     codes_note = []
@@ -366,7 +366,7 @@ def _edges_from_med(ml, path, name):
             return found
     detail = "; ".join((errors + codes_note)[:4])
     if detail:
-        raise MeshError("MED-Netz '{}': {}".format(name, detail))
+        raise MeshError("MED mesh '{}': {}".format(name, detail))
     return []
 
 
@@ -381,16 +381,16 @@ def read_med(path):
         import MEDLoader as ml
     except ImportError as exc:
         raise MeshError(
-            "MEDLoader ist nicht verfügbar ({}). MED-Dateien liest das Plugin nur innerhalb von SALOME.".format(
+            "MEDLoader is not available ({}). The plugin reads MED files only inside SALOME.".format(
                 exc
             )
         ) from exc
     try:
         names = list(ml.GetMeshNames(path))
     except Exception as exc:
-        raise MeshError("MED-Datei nicht lesbar: {}".format(exc)) from exc
+        raise MeshError("MED file could not be read: {}".format(exc)) from exc
     if not names:
-        raise MeshError("Die MED-Datei enthält kein Netz.")
+        raise MeshError("The MED file contains no mesh.")
     errors = []
     found = []
     for name in names:
@@ -403,7 +403,7 @@ def read_med(path):
     if found:
         return found
     detail = " ".join(errors)
-    raise MeshError("Keine Balkenkanten (SEG2/SEG3) in der MED-Datei. {}".format(detail).strip())
+    raise MeshError("No beam edges (SEG2/SEG3) in the MED file. {}".format(detail).strip())
 
 
 def _as_int(value):
@@ -518,7 +518,7 @@ def edges_from_smesh(mesh):
     try:
         import SMESH
     except ImportError as exc:
-        raise MeshError("SMESH ist nicht importierbar ({}).".format(exc)) from exc
+        raise MeshError("SMESH cannot be imported ({}).".format(exc)) from exc
     edge_ids = []
     for eid in mesh.GetElementsByType(SMESH.EDGE):
         edge_ids.append(int(eid))
@@ -543,5 +543,5 @@ def edges_from_smesh(mesh):
         p2 = tuple(mesh.GetNodeXYZ(nodes[1]))
         edges.append(Edge(str(eid), p1, p2, tuple(membership.get(eid, ()))))
     if not edges:
-        raise MeshError("Das SMESH-Netz enthält keine Kanten.")
+        raise MeshError("The SMESH mesh contains no edges.")
     return edges

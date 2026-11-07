@@ -118,7 +118,7 @@ def resolve_edges(parsed, file_refs, meshes, mesh_path=""):
                 if found is not None:
                     return found
         return _read_mesh_file(path, parsed.mesh_format), path
-    raise MeshError("Kein Netz gefunden. Das Balkennetz muss in SMESH geladen sein.")
+    raise MeshError("No mesh found. The beam mesh must be loaded in SMESH.")
 
 
 def visualize_active(meshes=None):
@@ -129,18 +129,18 @@ def visualize_active(meshes=None):
     try:
         case = current_case()
     except Exception as exc:
-        raise ControlError("Aktive Studie nicht lesbar: {}".format(exc)) from exc
+        raise ControlError("The active study could not be read: {}".format(exc)) from exc
     try:
         parsed = parse_comm(case["text"])
     except CommError as exc:
         raise ControlError(str(exc)) from exc
     if not parsed.beam_groups and not parsed.all_edges_are_beams and not parsed.sections:
-        raise ControlError("Die aktive Studie enthält keine Balken (POU_D_*).")
+        raise ControlError("The active study has no beams (POU_D_*).")
     if meshes is None:
         try:
             meshes = list_smesh_meshes()
         except Exception as exc:
-            raise ControlError("SMESH-Netze nicht lesbar: {}".format(exc)) from exc
+            raise ControlError("SMESH meshes could not be read: {}".format(exc)) from exc
     try:
         edges, origin = resolve_edges(parsed, case.get("files") or [], meshes)
     except MeshError as exc:
@@ -155,5 +155,5 @@ def visualize_active(meshes=None):
         solid=True,
         fit=True,
     )
-    notes.insert(0, "Netz: {} ({} Kanten).".format(origin, len(edges)))
+    notes.insert(0, "Mesh: {} ({} edges).".format(origin, len(edges)))
     return notes

@@ -1,96 +1,64 @@
-# Balkenkontrolle
+# Beam check for SALOME / AsterStudy
 
-Plugin für **SALOME / AsterStudy**. Es zeigt vor der Rechnung, wie Code_Aster die Balken eines Falls orientiert und welchen Querschnitt `AFFE_CARA_ELEM` ihnen gibt.
+Plugin for a **check before the analysis**: local beam axes and the
+cross-sections from `AFFE_CARA_ELEM`, the way Code_Aster uses them for `POU_*`
+(document U4.42.01). AsterStudy no longer shows this since Eficas.
 
-Seit dem Wegfall der Eficas-Vorschau fehlt diese Kontrolle im Modul. Das Plugin zeigt sie in der **Ansicht von AsterStudy** als SMESH-Netz `Balkenkontrolle`: lokale Achse X rot, Y grün, Z blau, der Querschnitt als Flächenschale entlang des Stabes. Das GEOM-Modul wird nicht geöffnet.
+X is red, Y is green, Z is blue. The section lies in the local frame:
+HY along Y, HZ along Z, tubes through R and EP.
 
-Die Regeln folgen Code_Aster **U4.42.01** für gerade `POU_*`-Elemente auf `SEG2`.
+## Rules
 
-Die Darstellung prüft die Eingabe. Sie ersetzt weder `MACR_CARA_POUTRE` noch `IMPR_RESU` / `REPERE_LOCAL`.
+* Local X points from the first node of the SEG2 to the second.
+* Without `ORIENTATION`, `ANGL_VRIL = 0`.
+* If the beam is not along global Z, local Y is the normalised cross product
+  of global Z and local X. Local Z completes the right-handed frame. On a
+  horizontal beam, local Z then points upward.
+* If the beam lies on global Z, local Y is parallel to global Y.
+* `VECT_Y` / `VECT_Z`: the projection of the vector onto the plane normal to
+  the beam becomes Y or Z. A vector parallel to the beam is invalid
+  (Code_Aster rejects it). The plugin falls back to the default frame and
+  writes a note.
+* `ANGL_VRIL` rotates the default frame right-handed about X, in degrees.
+* `VECT_MAIL_Y/Z` is shown without the principal-axis angle from
+  `MACR_CARA_POUTRE`. `SECTION='GENERALE'` is a solid ellipse with the same
+  `IY` and `IZ`.
 
-## Installation
+Supported sections: `RECTANGLE` (solid and with EPY/EPZ), `CERCLE`
+(solid and tube), `GENERALE` (equivalent solid ellipse), `COUDE` as nominal
+geometry only.
 
-Kurzfassung, wenn noch keine andere `salome_plugins.py` im Benutzerordner liegt:
+## Install
 
-```bash
-mkdir -p "$HOME/.config/salome/Plugins"
-cp -a salome_plugins.py beamcheck "$HOME/.config/salome/Plugins/"
-```
+Close SALOME. Copy `salome_plugins.py` and the package `beamcheck/` to one of:
 
-SALOME neu starten. In AsterStudy:
+1. `~/.config/salome/Plugins/`
+2. a directory on `$SALOME_PLUGINS_PATH`
+3. `<ASTERSTUDY_ROOT>/share/salome/plugins/asterstudy/`
 
-**Werkzeuge → Erweiterungen → Balkenkontrolle (Orientierung und Querschnitt)**
+Restart SALOME, open AsterStudy, then
 
-Liegt dort schon eine `salome_plugins.py`, diese Datei nicht überschreiben. Das Plugin in ein eigenes Verzeichnis legen und `SALOME_PLUGINS_PATH` setzen. Die drei Wege, der Hinweis zum bestehenden Plugin und die Laufzeitabhängigkeiten stehen in [docs/installation.md](docs/installation.md).
+**Tools → Extensions → Beam check (orientation and section)**.
 
-Python 3.7 oder neuer. Im GUI werden PyQt5 (oder PyQt6) und SMESH erwartet, für MED-Dateien zusätzlich MEDLoader. Alles davon bringt SALOME mit.
+The menu bar of AsterStudy has a **Beams** button with an I-beam icon. One
+click shows the beams of the active study, the next hides them.
 
-## Bedienung
+In the dialog, use the current case or pick a command file and a mesh file
+(MED or ASTER mail). A mesh already loaded in SMESH works too. The check
+appears in the **AsterStudy view** as the mesh `BeamCheck` (faces, not a GEOM
+shape). A new run replaces the previous one. MED files are read on every
+non-empty cell level, not only the highest one, so beams stored under a
+volume mesh are kept.
 
-| Quelle | Wann |
-| --- | --- |
-| Aktueller AsterStudy-Fall | comm-Text und die Datei aus `LIRE_MAILLAGE` / `UNITE` kommen aus der offenen Studie |
-| comm- und Netzdatei | Dateien vom Rechner, MED oder ASTER-`.mail` |
-| SMESH-Netz | ein bereits geladenes Netz, Gruppen inklusive |
-
-MED-Dateien werden auf **allen** Zelldimensionen gelesen. Balken, die in derselben Datei unter einem Volumen- oder Flächennetz stehen, bleiben erhalten. Gruppen (`GROUP_MA`) kommen von der Ebene, auf der die SEG2/SEG3 liegen.
-
-Optionen im Dialog:
-
-* **Querschnitte** und **Achsen X Y Z** lassen sich getrennt schalten.
-* **Entlang des Stabes** prismt den Schnitt über die Länge. Sonst liegt eine Scheibe in der Mitte.
-* **Achslänge / Stablänge** setzt die Pfeillänge, Vorgabe 0,22.
-* **Ansicht einpassen** setzt die Kamera auf das Kontrollnetz. AsterStudy bleibt das aktive Modul.
-
-In der Menüleiste von AsterStudy liegt der Schalter **Balken**. Er ist standardmäßig an, sobald die aktive Studie Balken enthält, und blendet sie wieder aus. Das Netz heißt `Balkenkontrolle`. Hinweise (paralleler Vektor, Hohlprofil zugelaufen, `GENERALE` als Vollellipse aus IY und IZ) stehen im Textfeld des Dialogs.
-
-## Orientierung
-
-* Lokales X zeigt vom ersten zum zweiten Knoten.
-* Ohne `ORIENTATION` gilt der Standardrahmen (`ANGL_VRIL = 0`).
-* Stab nicht parallel zu global Z: lokales Y ist das normierte Kreuzprodukt aus globalem Z und lokalem X. Bei einem horizontalen Stab zeigt lokales Z nach oben.
-* Stab parallel zu global Z: lokales Y liegt parallel zum globalen Y.
-* `VECT_Y` / `VECT_Z`: die Projektion auf die Schnittebene wird Y bzw. Z. Ein zum Stab paralleler Vektor ist ungültig. Gezeigt wird dann der Standardrahmen, plus Hinweis.
-* `ANGL_VRIL` dreht den Standardrahmen rechtshändig um X, in Grad.
-* `VECT_MAIL_Y` / `VECT_MAIL_Z` ohne den Hauptachsenwinkel aus `MACR_CARA_POUTRE`.
-
-Ausführlich, inklusive Surcharge und `INCLUDE`: [docs/orientierung.md](docs/orientierung.md).
-
-## Querschnitte
-
-| `SECTION` | Gezeichnet |
-| --- | --- |
-| `RECTANGLE` | Vollquerschnitt `HY` × `HZ`, mit `EPY`/`EPZ` als Hohlkasten |
-| `CERCLE` | Vollkreis über `R`, mit `EP` < `R` als Rohr |
-| `GENERALE` | Vollellipse mit denselben `IY` und `IZ` |
-| `COUDE` | Nenngeometrie, gerade zwischen den Endknoten, ohne Ovalisierung |
-
-`HY` liegt auf lokalem Y, `HZ` auf lokalem Z. Details und die Flächenformeln: [docs/querschnitte.md](docs/querschnitte.md).
-
-## Beispiel
-
-`beispiele/rahmen.comm` und `beispiele/rahmen.mail` beschreiben einen Rahmen mit Stützen, Riegeln, Hohlkasten-Traversen und Rohrverband.
-
-Die Stützen nutzen `VECT_Y = (1, 0, 0)`, der Riegel `ANGL_VRIL = 0`. Im Dialog **comm- und Netzdatei** wählen und beide Dateien angeben. Eine SALOME-Studie ist dafür nicht nötig, das Netz ist ASTER-mail.
-
-## Tests
-
-Ohne SALOME, aus dem Projektverzeichnis:
+Checked with the included study `beispiele/rahmen.comm` and
+`beispiele/rahmen.mail` (without SALOME):
 
 ```bash
 python3 -m unittest tests/test_beamcheck.py
 ```
 
-Die Tests prüfen den Standardrahmen, den Sonderfall parallel zu Z, `ANGL_VRIL`, `VECT_Y`, den parallelen Vektor und das Einlesen des Beispielrahmens.
+Python 3.7 or newer. The GUI needs PyQt5 (or PyQt6) and the SALOME modules
+GEOM and, for MED, MEDLoader.
 
-## Grenzen
-
-* `INCLUDE` wird nicht expandiert. Die gelesene comm-Datei muss `AFFE_CARA_ELEM` selbst enthalten.
-* `SEG3` wird über die Endknoten behandelt.
-* Diskrete Elemente ohne Balkenquerschnitt bleiben unsichtbar.
-* Der Winkel zwischen einer `VECT_MAIL_*`-Faser und den Hauptachsen eines allgemeinen Profils fehlt.
-* Die Flächen einer Gruppe liegen in einer SMESH-Gruppe. Einzelne Körper pro Stab gibt es nicht.
-
-## Lizenz
-
-[MIT](LICENSE).
+The display checks the input. It does not replace `MACR_CARA_POUTRE` or the
+results of `IMPR_RESU` / `REPERE_LOCAL`.

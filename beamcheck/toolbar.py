@@ -1,6 +1,8 @@
-"""Schalter „Balken“ in der Menüleiste von AsterStudy."""
+"""Beams toggle in the AsterStudy menu bar."""
 
 from __future__ import annotations
+
+import os
 
 ACTION_ID = 19050
 _BUTTON = "balkenkontrolle.toggle"
@@ -60,11 +62,15 @@ def _toolbars():
     return found
 
 
-def _is_balken(action):
+def _label(action):
     try:
-        return action.text().replace("&", "").strip() == "Balken"
+        return action.text().replace("&", "").strip()
     except Exception:
-        return False
+        return ""
+
+
+def _icon_path():
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons", "beam.png")
 
 
 def _menu_has(bar, action):
@@ -75,7 +81,7 @@ def _menu_has(bar, action):
     except Exception:
         return False
     for item in actions:
-        if item is action or _is_balken(item):
+        if item is action or _label(item) in ("Beams", "Balken"):
             return True
         try:
             menu = item.menu()
@@ -84,7 +90,7 @@ def _menu_has(bar, action):
         if menu is None:
             continue
         for sub in menu.actions():
-            if sub is action or _is_balken(sub):
+            if sub is action or _label(sub) in ("Beams", "Balken"):
                 return True
     return False
 
@@ -144,15 +150,23 @@ def _ensure_action(sg):
         action = sg.action(ACTION_ID)
     except Exception:
         action = None
+    tip = "Show or hide the beams of the active study"
+    icon = _icon_path()
     if action is None:
-        tip = "Balken der aktiven Studie ein- oder ausblenden"
         try:
-            action = sg.createAction(ACTION_ID, "Balken", tip, tip, "", 0, True)
+            action = sg.createAction(ACTION_ID, "Beams", tip, tip, icon, 0, True)
         except TypeError:
-            action = sg.createAction(ACTION_ID, "Balken", tip, tip, "")
-    action.setText("Balken")
-    action.setToolTip("Balken der aktiven Studie ein- oder ausblenden")
+            action = sg.createAction(ACTION_ID, "Beams", tip, tip, icon)
+    action.setText("Beams")
+    action.setToolTip(tip)
+    action.setStatusTip(tip)
     action.setCheckable(True)
+    try:
+        from PyQt5.QtGui import QIcon
+    except ImportError:
+        from PyQt6.QtGui import QIcon
+    if os.path.isfile(icon):
+        action.setIcon(QIcon(icon))
     return action
 
 
@@ -188,7 +202,7 @@ def _on_toggled(checked):
 
 def _warn(text):
     QtWidgets = _qt()
-    QtWidgets.QMessageBox.warning(None, "Balkenkontrolle", text)
+    QtWidgets.QMessageBox.warning(None, "Beam check", text)
 
 
 def _want_on():
@@ -242,8 +256,12 @@ def _try_install():
         bar = sg.getMainMenuBar()
     except Exception:
         bar = None
-    if bar is not None and not _menu_has(bar, action):
-        bar.addAction(action)
+    if bar is not None:
+        for item in list(bar.actions()):
+            if _label(item) == "Balken":
+                bar.removeAction(item)
+        if not _menu_has(bar, action):
+            bar.addAction(action)
     if not _state.get("tool_added") and not _on_any_toolbar(action):
         try:
             sg.createTool(ACTION_ID, "CommandsToolbar")

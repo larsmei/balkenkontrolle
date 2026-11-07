@@ -79,7 +79,7 @@ _SAFE_BUILTINS = {
 def _safe_import(name, globals=None, locals=None, fromlist=(), level=0):
     if name == "math":
         return math
-    raise ImportError("Import von '{}' ist in der Balkenkontrolle gesperrt.".format(name))
+    raise ImportError("Import of '{}' is blocked in the beam check.".format(name))
 
 
 def _as_factors(value):
@@ -108,21 +108,21 @@ def _cara_values(factor):
         return {}, []
     keys = [cara] if isinstance(cara, str) else [str(k) for k in cara]
     if isinstance(vale, bool):
-        return {}, ["VALE ist kein Zahlenwert."]
+        return {}, ["VALE is not a number."]
     if isinstance(vale, (int, float)):
         vals = [float(vale)]
     elif isinstance(vale, (list, tuple)):
         try:
             vals = [float(v) for v in vale]
         except (TypeError, ValueError):
-            return {}, ["VALE enthält keinen Zahlenwert."]
+            return {}, ["VALE contains a non-numeric value."]
     else:
-        return {}, ["VALE hat einen unbekannten Typ."]
+        return {}, ["VALE has an unknown type."]
     if len(keys) == 1 and len(vals) > 1:
         # VECT_Y = (x, y, z): ein Name, drei Komponenten.
         return {keys[0]: vals}, []
     if len(vals) != len(keys):
-        note = "CARA ({}) und VALE ({}) haben unterschiedlich viele Einträge.".format(len(keys), len(vals))
+        note = "CARA ({}) and VALE ({}) have different lengths.".format(len(keys), len(vals))
         n = min(len(keys), len(vals))
         return dict(zip(keys[:n], vals[:n])), [note]
     return dict(zip(keys, vals)), []
@@ -151,7 +151,7 @@ def parse_comm(text):
     def make(name):
         def caller(*args, **kwargs):
             if args:
-                raise TypeError("{} erwartet Schlüsselwörter.".format(name))
+                raise TypeError("{} expects keywords.".format(name))
             cmd = Cmd(name, kwargs)
             calls.append(cmd)
             return cmd
@@ -177,14 +177,14 @@ def parse_comm(text):
     try:
         exec(compile(text, "<comm>", "exec"), ns)
     except Exception as exc:
-        raise CommError("Die comm-Datei ließ sich nicht lesen: {}".format(exc)) from exc
+        raise CommError("The command file could not be read: {}".format(exc)) from exc
 
     parsed = ParsedComm()
     mesh_cmds = [c for c in calls if c.name == "LIRE_MAILLAGE"]
     model_cmds = [c for c in calls if c.name == "AFFE_MODELE"]
     cara_cmds = [c for c in calls if c.name == "AFFE_CARA_ELEM"]
     if any(c.name == "INCLUDE" for c in calls):
-        parsed.warnings.append("INCLUDE wird nicht expandiert. Bitte die aufgelöste comm-Datei verwenden.")
+        parsed.warnings.append("INCLUDE is not expanded. Use the resolved command file.")
 
     parsed.has_model = bool(model_cmds)
     beam_groups = set()
@@ -197,7 +197,7 @@ def parse_comm(text):
                 try:
                     parsed.mesh_unite = int(unite)
                 except (TypeError, ValueError):
-                    parsed.warnings.append("UNITE der LIRE_MAILLAGE ist keine Zahl.")
+                    parsed.warnings.append("UNITE of LIRE_MAILLAGE is not a number.")
             fmt = mail.kwargs.get("FORMAT")
             if fmt:
                 parsed.mesh_format = str(fmt).upper()
@@ -222,7 +222,7 @@ def parse_comm(text):
         if fmt and not parsed.mesh_format:
             parsed.mesh_format = str(fmt).upper()
     if not parsed.has_model:
-        parsed.warnings.append("Kein AFFE_MODELE gefunden. Alle SEG2 werden als Balken behandelt.")
+        parsed.warnings.append("No AFFE_MODELE found. Every SEG2 is treated as a beam.")
         all_beams = True
     parsed.beam_groups = beam_groups
     parsed.all_edges_are_beams = all_beams
@@ -233,13 +233,13 @@ def parse_comm(text):
             values, notes = _cara_values(factor)
             parsed.warnings.extend(notes)
             if section is None:
-                parsed.warnings.append("Ein POUTRE-Faktor ohne SECTION wird übersprungen.")
+                parsed.warnings.append("A POUTRE factor without SECTION is skipped.")
                 continue
             vari = str(factor.get("VARI_SECT", "CONSTANT")).upper()
             payload = {"section": str(section).upper(), "values": values, "vari": vari}
             if vari not in ("CONSTANT", ""):
                 parsed.warnings.append(
-                    "VARI_SECT={} wird nur mit den Maßen am Anfang des Stabes dargestellt.".format(vari)
+                    "VARI_SECT={} is drawn with the dimensions at the start of the beam.".format(vari)
                 )
                 # Homothetisch: HY1/HZ1 bevorzugen, sonst HY/HZ.
                 alias = {}

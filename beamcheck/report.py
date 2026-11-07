@@ -32,12 +32,12 @@ class Report:
     skipped: int = 0
 
     def summary(self):
-        lines = ["{} Balken zur Kontrolle.".format(len(self.beams))]
+        lines = ["{} beams to check.".format(len(self.beams))]
         alarmed = [b for b in self.beams if b.warnings]
         if alarmed:
-            lines.append("{} davon mit Hinweis.".format(len(alarmed)))
+            lines.append("{} of them with a note.".format(len(alarmed)))
         if self.skipped:
-            lines.append("{} Kanten übersprungen (keine Balkenmodellierung, kein POUTRE).".format(self.skipped))
+            lines.append("{} edges skipped (not modelled as a beam, no POUTRE).".format(self.skipped))
         lines.extend(self.warnings)
         for beam in self.beams:
             for note in beam.warnings:
@@ -66,7 +66,7 @@ def build_report(parsed, edges):
             continue
         for group in target.groups:
             if group and group not in known_groups:
-                report.warnings.append("Gruppe '{}' kommt im Netz nicht vor.".format(group))
+                report.warnings.append("Group '{}' is not in the mesh.".format(group))
 
     for edge in edges:
         section_target = resolve_assignments(parsed.sections, edge.groups, edge.name)
@@ -76,14 +76,14 @@ def build_report(parsed, edges):
             continue
         ex, length = beam_axis(edge.p1, edge.p2)
         if ex is None:
-            report.warnings.append("{} hat keine Länge und wird übersprungen.".format(edge.name))
+            report.warnings.append("{} has no length and is skipped.".format(edge.name))
             report.skipped += 1
             continue
         warnings = []
         if section_target is None:
             profile = profile_from_cara("GENERALE", {})
-            profile.warnings = ["Keine POUTRE-Zuordnung. Nur die lokalen Achsen werden gezeigt."]
-            section_group = edge.groups[0] if edge.groups else "OHNE_GRUPPE"
+            profile.warnings = ["No POUTRE assignment. Only the local axes are shown."]
+            section_group = edge.groups[0] if edge.groups else "NO_GROUP"
         else:
             payload = section_target.payload
             profile = profile_from_cara(payload["section"], payload["values"])
@@ -98,7 +98,7 @@ def build_report(parsed, edges):
 
         if orient_target is None:
             orient = Orientation("DEFAULT")
-            label = "Standard (ANGL_VRIL = 0)"
+            label = "Default (ANGL_VRIL = 0)"
         else:
             cara = orient_target.payload["cara"]
             values = orient_target.payload["values"]
@@ -124,7 +124,7 @@ def build_report(parsed, edges):
                             nums.append(float(val))
                 if len(nums) < 3:
                     orient = Orientation(cara, vector=None)
-                    label = cara + " (unvollständig)"
+                    label = cara + " (incomplete)"
                 else:
                     orient = Orientation(cara, vector=tuple(nums[:3]))
                     label = "{} = ({:.4g}, {:.4g}, {:.4g})".format(cara, nums[0], nums[1], nums[2])
@@ -151,7 +151,7 @@ def build_report(parsed, edges):
         )
     if not report.beams and known_groups:
         shown = ", ".join(sorted(known_groups)[:8])
-        report.warnings.append("Gruppen im Netz: {}.".format(shown))
+        report.warnings.append("Groups on the mesh: {}.".format(shown))
     # Doppelte Gruppen-Hinweise entfernen, Reihenfolge halten.
     seen = set()
     unique = []

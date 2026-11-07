@@ -52,7 +52,7 @@ class OrientationTests(unittest.TestCase):
     def test_beam_along_z_default(self):
         ex, _ = beam_axis((0, 0, 0), (0, 0, 4))
         ey, ez, warnings = local_frame(ex, Orientation("DEFAULT"))
-        self.assertTrue(any("Z-Achse" in w for w in warnings))
+        self.assertTrue(any("global Z axis" in w for w in warnings))
         self.assertTrue(_close(ey, (0, 1, 0)))
         self.assertTrue(_close(ez, (-1, 0, 0)))
 
@@ -78,7 +78,7 @@ class OrientationTests(unittest.TestCase):
     def test_parallel_vector_falls_back(self):
         ex, _ = beam_axis((0, 0, 0), (1, 0, 0))
         _ey, _ez, warnings = local_frame(ex, Orientation("VECT_Y", vector=(4, 0, 0)))
-        self.assertTrue(any("parallel zum Stab" in w for w in warnings))
+        self.assertTrue(any("parallel to the beam" in w for w in warnings))
         self.assertTrue(_close(_ey, (0, 1, 0)))
 
 

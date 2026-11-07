@@ -7,7 +7,7 @@ Namen mit dem Präfix ``Balkenkontrolle_`` und ersetzt einen früheren Lauf.
 
 from __future__ import annotations
 
-PREFIX = "Balkenkontrolle_"
+PREFIX = "BeamCheck_"
 
 # Gedämpfte Gruppenfarben, Achsen fest im RGB-Sinn der lokalen Basis.
 _PALETTE = (
@@ -259,7 +259,7 @@ def publish(context, report, show_sections=True, show_axes=True, axis_fraction=0
     _remove_previous(study)
     notes = []
     if not report.beams:
-        notes.append("Nichts zu zeichnen.")
+        notes.append("Nothing to draw.")
         return notes
 
     lengths = [beam.length for beam in report.beams]
@@ -286,7 +286,7 @@ def publish(context, report, show_sections=True, show_axes=True, axis_fraction=0
                 face = _face(geompy, outer, holes)
                 prism = _extrude(geompy, face, origin, beam.ex, span)
             except Exception as exc:
-                notes.append("{}: Querschnitt nicht erzeugt ({})".format(beam.name, exc))
+                notes.append("{}: section was not created ({})".format(beam.name, exc))
                 prism = None
             if prism is not None:
                 section_shapes.setdefault(beam.section_group, []).append(prism)
@@ -299,11 +299,11 @@ def publish(context, report, show_sections=True, show_axes=True, axis_fraction=0
                 try:
                     axis_shapes[key].append(_arrow(geompy, mid, direction, alen, radius))
                 except Exception as exc:
-                    notes.append("{}: Achse {} nicht erzeugt ({})".format(beam.name, key, exc))
+                    notes.append("{}: axis {} was not created ({})".format(beam.name, key, exc))
 
     for group, shapes in section_shapes.items():
         compound = shapes[0] if len(shapes) == 1 else geompy.MakeCompound(shapes)
-        name = PREFIX + "Querschnitt_" + group
+        name = PREFIX + "Section_" + group
         entry = _publish(geompy, compound, name)
         color = _PALETTE[palette_index[group] % len(_PALETTE)]
         _paint(entry, color, 0.28)
@@ -311,14 +311,14 @@ def publish(context, report, show_sections=True, show_axes=True, axis_fraction=0
         if not shapes:
             continue
         compound = shapes[0] if len(shapes) == 1 else geompy.MakeCompound(shapes)
-        entry = _publish(geompy, compound, PREFIX + "Achse_" + key)
+        entry = _publish(geompy, compound, PREFIX + "Axis_" + key)
         _paint(entry, _AXIS_RGB[key], 0.0)
     _refresh(activate_geom)
     notes.insert(
         0,
-        "GEOM aktualisiert: {} Gruppen-Querschnitte, Achsen {}.".format(
+        "GEOM updated: {} section groups, axes {}.".format(
             len(section_shapes),
-            "an" if show_axes else "aus",
+            "on" if show_axes else "off",
         ),
     )
     return notes

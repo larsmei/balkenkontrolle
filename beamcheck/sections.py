@@ -51,8 +51,8 @@ def rectangle_profile(hy, hz, epy=None, epz=None):
     hy = float(hy)
     hz = float(hz)
     if hy <= 0 or hz <= 0:
-        warnings.append("HY und HZ müssen positiv sein.")
-        return Profile("RECTANGLE", [], warnings=warnings, label="Rechteck ungültig")
+        warnings.append("HY and HZ must be positive.")
+        return Profile("RECTANGLE", [], warnings=warnings, label="Invalid rectangle")
     holes = []
     area = hy * hz
     iy = hy * hz**3 / 12.0
@@ -62,21 +62,21 @@ def rectangle_profile(hy, hz, epy=None, epz=None):
         epy_v = 0.0 if epy is None else float(epy)
         epz_v = 0.0 if epz is None else float(epz)
         if epy_v < 0 or epz_v < 0:
-            warnings.append("Wanddicken dürfen nicht negativ sein.")
+            warnings.append("Wall thicknesses must not be negative.")
         inner_y = hy - 2.0 * epy_v
         inner_z = hz - 2.0 * epz_v
         if inner_y <= 1e-9 or inner_z <= 1e-9:
             warnings.append(
-                "Die Wanddicke füllt den Rechteckquerschnitt. Dargestellt wird der Vollquerschnitt."
+                "The wall thickness fills the rectangle. The solid section is shown."
             )
         else:
             holes.append(_rect(inner_y, inner_z, clockwise=True))
             area = hy * hz - inner_y * inner_z
             iy = (hy * hz**3 - inner_y * inner_z**3) / 12.0
             iz = (hz * hy**3 - inner_z * inner_y**3) / 12.0
-    label = "Rechteck HY={:.4g} HZ={:.4g}".format(hy, hz)
+    label = "Rectangle HY={:.4g} HZ={:.4g}".format(hy, hz)
     if hollow and holes:
-        label += " hohl"
+        label += " hollow"
     return Profile(
         "RECTANGLE",
         _rect(hy, hz),
@@ -93,24 +93,24 @@ def circle_profile(radius, ep=None, count=48):
     warnings = []
     radius = float(radius)
     if radius <= 0:
-        warnings.append("R muss positiv sein.")
-        return Profile("CERCLE", [], warnings=warnings, label="Kreis ungültig")
+        warnings.append("R must be positive.")
+        return Profile("CERCLE", [], warnings=warnings, label="Invalid circle")
     holes = []
     area = math.pi * radius**2
     inertia = math.pi * radius**4 / 4.0
-    label = "Kreis R={:.4g}".format(radius)
+    label = "Circle R={:.4g}".format(radius)
     if ep is not None:
         ep_v = float(ep)
         if ep_v < 0:
-            warnings.append("EP darf nicht negativ sein.")
+            warnings.append("EP must not be negative.")
         elif ep_v > radius + 1e-9:
-            warnings.append("EP > R. Dargestellt wird der Vollkreis.")
+            warnings.append("EP > R. The solid circle is shown.")
         elif ep_v < radius - 1e-12:
             ri = radius - ep_v
             holes.append(_ring(ri, count, clockwise=True))
             area = math.pi * (radius**2 - ri**2)
             inertia = math.pi * (radius**4 - ri**4) / 4.0
-            label = "Rohr R={:.4g} EP={:.4g}".format(radius, ep_v)
+            label = "Tube R={:.4g} EP={:.4g}".format(radius, ep_v)
     return Profile("CERCLE", _ring(radius, count), holes, warnings, area, inertia, inertia, label)
 
 
@@ -140,7 +140,7 @@ def _ellipse(a, b, count):
 def general_profile(iy, iz, count=48):
     """Vollellipse mit denselben IY und IZ. Kein Fertigprofil."""
     warnings = [
-        "SECTION='GENERALE' hat keine Kontur. Gezeigt wird eine Vollellipse mit denselben IY und IZ."
+        "SECTION='GENERALE' has no contour. A solid ellipse with the same IY and IZ is shown."
     ]
     try:
         axes = ellipse_semiaxes(iy, iz) if iy is not None and iz is not None else None
@@ -148,9 +148,9 @@ def general_profile(iy, iz, count=48):
         axes = None
     if axes is None:
         warnings.append(
-            "Ohne positive IY und IZ kann die Ellipse nicht gezeichnet werden. Nur die Achsen erscheinen."
+            "Without positive IY and IZ the ellipse cannot be drawn. Only the axes appear."
         )
-        return Profile("GENERALE", [], warnings=warnings, label="GENERALE ohne IY/IZ")
+        return Profile("GENERALE", [], warnings=warnings, label="GENERALE without IY/IZ")
     a, b = axes
     iy_v = math.pi / 4.0 * a * b**3
     iz_v = math.pi / 4.0 * a**3 * b
@@ -171,23 +171,23 @@ def profile_from_cara(section, values):
     section = (section or "").upper()
     if section == "RECTANGLE":
         if "HY" not in values or "HZ" not in values:
-            return Profile("RECTANGLE", [], warnings=["RECTANGLE ohne HY/HZ."], label="Rechteck unvollständig")
+            return Profile("RECTANGLE", [], warnings=["RECTANGLE without HY/HZ."], label="Incomplete rectangle")
         return rectangle_profile(values["HY"], values["HZ"], values.get("EPY"), values.get("EPZ"))
     if section == "CERCLE":
         if "R" not in values:
-            return Profile("CERCLE", [], warnings=["CERCLE ohne R."], label="Kreis unvollständig")
+            return Profile("CERCLE", [], warnings=["CERCLE without R."], label="Incomplete circle")
         return circle_profile(values["R"], values.get("EP"))
     if section == "GENERALE":
         folded = {str(key).upper(): value for key, value in values.items()}
         return general_profile(folded.get("IY"), folded.get("IZ"))
     if section == "COUDE":
-        warnings_prefix = "COUDE: Ovalisierung wird nicht dargestellt, nur die Nenngeometrie."
+        warnings_prefix = "COUDE: ovalisation is not shown, only the nominal geometry."
         if "R" in values:
             prof = circle_profile(values["R"], values.get("EP"))
         elif "HY" in values and "HZ" in values:
             prof = rectangle_profile(values["HY"], values["HZ"], values.get("EPY"), values.get("EPZ"))
         else:
-            prof = Profile("COUDE", [], warnings=[], label="COUDE ohne Maße")
+            prof = Profile("COUDE", [], warnings=[], label="COUDE without dimensions")
         prof.warnings.insert(0, warnings_prefix)
         return prof
-    return Profile(section or "?", [], warnings=["Unbekannte SECTION '{}'.".format(section)], label=section or "?")
+    return Profile(section or "?", [], warnings=["Unknown SECTION '{}'.".format(section)], label=section or "?")

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from beamcheck.surface import axis_arrow, extrude_shell
 
-MESH_NAME = "Balkenkontrolle"
+MESH_NAME = "BeamCheck"
 _PALETTE = (
     (176, 122, 74),
     (150, 162, 172),
@@ -53,7 +53,7 @@ def collect_faces(report, show_sections=True, show_axes=True, axis_fraction=0.22
                 mid = tuple((beam.p1[i] + beam.p2[i]) * 0.5 for i in range(3))
                 origin = tuple(mid[i] - beam.ex[i] * span * 0.5 for i in range(3))
             add(
-                "Querschnitt_" + beam.section_group,
+                "Section_" + beam.section_group,
                 extrude_shell(origin, beam.ex, beam.ey, beam.ez, span, beam.profile.outer, beam.profile.holes),
             )
         if show_axes:
@@ -67,7 +67,10 @@ def collect_faces(report, show_sections=True, show_axes=True, axis_fraction=0.22
 
 def is_control_name(name):
     text = name or ""
-    return text == MESH_NAME or text.startswith(MESH_NAME + "_")
+    for prefix in (MESH_NAME, "Balkenkontrolle"):
+        if text == prefix or text.startswith(prefix + "_"):
+            return True
+    return False
 
 
 def choose_roots(nodes):
@@ -307,18 +310,18 @@ def publish(context, report, show_sections=True, show_axes=True, axis_fraction=0
     del context
     notes = []
     if not report.beams:
-        notes.append("Nichts zu zeichnen.")
+        notes.append("Nothing to draw.")
         return notes
     faces = collect_faces(report, show_sections, show_axes, axis_fraction, solid)
     if not faces:
-        notes.append("Keine Flächen zu zeichnen.")
+        notes.append("No faces to draw.")
         return notes
     try:
         from salome.smesh import smeshBuilder
         import SMESH
     except Exception as exc:
         raise RuntimeError(
-            "SMESH ist nicht verfügbar ({}). Die Ansicht liegt im AsterStudy-Modul und braucht das Mesh-Modul.".format(
+            "SMESH is not available ({}). The view stays in AsterStudy and needs the mesh module.".format(
                 exc
             )
         ) from exc
@@ -343,7 +346,7 @@ def publish(context, report, show_sections=True, show_axes=True, axis_fraction=0
             if face is not None:
                 ids.append(face)
         if not ids:
-            notes.append("{}: keine Fläche erzeugt.".format(name))
+            notes.append("{}: no face was created.".format(name))
             continue
         group_name = MESH_NAME + "_" + name
         group = mesh.CreateEmptyGroup(SMESH.FACE, group_name)
@@ -367,7 +370,7 @@ def publish(context, report, show_sections=True, show_axes=True, axis_fraction=0
     _show_in_asterstudy(entries, fit)
     notes.insert(
         0,
-        "AsterStudy: Netz {} mit {} Flächengruppen (X rot, Y grün, Z blau).".format(MESH_NAME, len(entries)),
+        "AsterStudy: mesh {} with {} face groups (X red, Y green, Z blue).".format(MESH_NAME, len(entries)),
     )
     return notes
 
@@ -487,7 +490,7 @@ def clear():
                 builder.RemoveObjectWithChildren(sobj)
                 done = True
             except Exception as exc:
-                notes.append("{} nicht entfernt: {}".format(name, exc))
+                notes.append("{} was not removed: {}".format(name, exc))
                 continue
         removed += 1
     try:
@@ -496,7 +499,7 @@ def clear():
         pass
     _refresh_view(False)
     if removed:
-        notes.insert(0, "Kontrolle entfernt ({} Objekte).".format(removed))
+        notes.insert(0, "Check display removed ({} objects).".format(removed))
     else:
-        notes.append("Keine Kontrollanzeige gefunden.")
+        notes.append("No check display found.")
     return notes
