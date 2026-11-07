@@ -37,3 +37,10 @@ try:
     salome_pluginsmanager.AddFunction(_TITLE, _HELP, balkenkontrolle, module="ASTERSTUDY")
 except TypeError:
     salome_pluginsmanager.AddFunction(_TITLE, _HELP, balkenkontrolle)
+
+try:
+    from beamcheck.toolbar import ensure_toolbar
+
+    ensure_toolbar()
+except Exception:
+    pass

@@ -9,7 +9,9 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from beamcheck.aster_access import _live_gui, read_case
+from beamcheck.control import needed_groups, rank_meshes
 from beamcheck.geomview import _extrude
+from beamcheck.toolbar import select_toolbar
 from beamcheck.smeshview import choose_roots, is_control_name
 from beamcheck.mesh_io import SEG2_TYPE, SEG3_TYPE, read_mail, segments_from_connectivity
 from beamcheck.surface import cap_triangles, extrude_shell
@@ -342,6 +344,48 @@ class ClearSelectionTests(unittest.TestCase):
         self.assertEqual(choose_roots(nodes), ["0:1:4"])
         self.assertTrue(is_control_name("Balkenkontrolle"))
         self.assertFalse(is_control_name("Mesh_1"))
+
+
+class _Group:
+    def __init__(self, name):
+        self._name = name
+
+    def GetName(self):
+        return self._name
+
+
+class _Mesh:
+    def __init__(self, names):
+        self._groups = [_Group(name) for name in names]
+
+    def GetGroups(self):
+        return self._groups
+
+
+class ToolbarChoiceTests(unittest.TestCase):
+    def test_prefers_the_commands_toolbar(self):
+        ops = object()
+        cmds = object()
+        chosen = select_toolbar(
+            [("OperationsToolbar", 2, ops), ("CommandsToolbar", 2, cmds)]
+        )
+        self.assertIs(chosen, cmds)
+
+    def test_ranks_the_mesh_that_holds_the_beam_group(self):
+        class Parsed:
+            beam_groups = {"POUTRE"}
+            sections = []
+            orientations = []
+
+        other = _Mesh(["Last"])
+        beams = _Mesh(["POUTRE", "Lager"])
+        ranked = rank_meshes(
+            [("Volumen", other), ("Rahmen", beams), ("Balkenkontrolle", _Mesh(["X"]))],
+            needed_groups(Parsed()),
+        )
+        self.assertEqual(ranked[0][0], "Rahmen")
+        self.assertEqual(ranked[0][2], 1)
+        self.assertTrue(all(name != "Balkenkontrolle" for name, _mesh, _score in ranked))
 
 
 if __name__ == "__main__":

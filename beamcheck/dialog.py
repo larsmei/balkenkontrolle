@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import os
 import traceback
 
-from beamcheck.mesh_io import MeshError, edges_from_smesh, read_mail_file, read_med
+from beamcheck.mesh_io import MeshError, edges_from_smesh
 from beamcheck.parser import CommError, parse_comm
 from beamcheck.report import build_report
 
@@ -16,18 +15,6 @@ def _qt():
     except ImportError:
         from PyQt6 import QtCore, QtWidgets
     return QtCore, QtWidgets
-
-
-def _read_mesh_file(path, mesh_format):
-    ext = os.path.splitext(path)[1].lower()
-    fmt = (mesh_format or "").upper()
-    if fmt == "ASTER" or ext in (".mail", ".dat", ".txt"):
-        try:
-            return read_mail_file(path)
-        except MeshError:
-            if fmt == "ASTER":
-                raise
-    return read_med(path)
 
 
 def run_dialog(context):
@@ -135,7 +122,13 @@ def run_dialog(context):
                     self._case = None
                     self._say("AsterStudy-Fall nicht lesbar: {}".format(exc))
                 try:
-                    self._meshes = list_smesh_meshes()
+                    from beamcheck.smeshview import is_control_name
+
+                    self._meshes = [
+                        (name, mesh)
+                        for name, mesh in list_smesh_meshes()
+                        if not is_control_name(name)
+                    ]
                 except Exception as exc:
                     self._meshes = []
                     self._say("SMESH-Netze nicht gelistet: {}".format(exc))
@@ -185,51 +178,14 @@ def run_dialog(context):
                 return edges_from_smesh(mesh), "SMESH:" + _name
             # Liegt das Netz schon in der Studie, nicht noch einmal über
             # MEDLoader öffnen. Der Import aus dem Plugin-Thread stürzt ab.
-            if not self.mesh_path.text().strip():
-                loaded = self._loaded_edges()
-                if loaded is not None:
-                    return loaded
-            path = self.mesh_path.text().strip()
-            if not path and file_refs and parsed.mesh_unite is not None:
-                for unit, candidate in file_refs:
-                    if unit == parsed.mesh_unite and os.path.isfile(candidate):
-                        path = candidate
-                        break
-            if not path and file_refs:
-                for _unit, candidate in file_refs:
-                    if os.path.isfile(candidate) and os.path.splitext(candidate)[1].lower() in (
-                        ".med",
-                        ".mail",
-                        ".msh",
-                    ):
-                        path = candidate
-                        break
-            if path:
-                if not os.path.isfile(path):
-                    from beamcheck.aster_access import mesh_from_entry
+            from beamcheck.control import resolve_edges
 
-                    mesh = mesh_from_entry(path)
-                    if mesh is not None:
-                        return edges_from_smesh(mesh), "SMESH:" + path
-                return _read_mesh_file(path, parsed.mesh_format), path
-            if len(self._meshes) == 1:
-                name, mesh = self._meshes[0]
-                return edges_from_smesh(mesh), "SMESH:" + name
-            raise MeshError(
-                "Kein Netz gefunden. Ein SMESH-Netz wählen oder eine MED-/mail-Datei angeben."
+            return resolve_edges(
+                parsed,
+                file_refs,
+                self._meshes,
+                self.mesh_path.text().strip(),
             )
-
-        def _loaded_edges(self):
-            if len(self._meshes) != 1:
-                return None
-            name, mesh = self._meshes[0]
-            try:
-                edges = edges_from_smesh(mesh)
-            except MeshError:
-                return None
-            if not edges:
-                return None
-            return edges, "SMESH:" + name
 
         def _run(self):
             self.log.clear()

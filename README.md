@@ -42,7 +42,7 @@ Optionen im Dialog:
 * **Achslänge / Stablänge** setzt die Pfeillänge, Vorgabe 0,22.
 * **Ansicht einpassen** setzt die Kamera auf das Kontrollnetz. AsterStudy bleibt das aktive Modul.
 
-Das Netz heißt `Balkenkontrolle`. **Anzeige entfernen** löscht es aus Studie und Ansicht. Ein neuer Lauf ersetzt einen vorherigen. Hinweise (paralleler Vektor, Hohlprofil zugelaufen, `GENERALE` nur als Hülle) stehen im Textfeld des Dialogs.
+In der Befehlsleiste von AsterStudy, rechts neben den Stufen, liegt der Schalter **Balken**. Er ist standardmäßig an, sobald die aktive Studie Balken enthält, und blendet sie wieder aus. Das Netz heißt `Balkenkontrolle`. Hinweise (paralleler Vektor, Hohlprofil zugelaufen, `GENERALE` nur als Hülle) stehen im Textfeld des Dialogs.
 
 ## Orientierung
 

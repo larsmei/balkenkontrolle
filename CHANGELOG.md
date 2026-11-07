@@ -1,5 +1,9 @@
 # Änderungsprotokoll
 
+## 1.1.4 — 2026-11-07
+
+* Schalter **Balken** in der Befehlsleiste, rechts neben den Stufen. Er visualisiert die Balkenelemente der aktiven Studie und blendet sie wieder aus.
+
 ## 1.1.3 — 2026-11-07
 
 * **Anzeige entfernen** löscht das Kontrollnetz aus der Studie und aus der Ansicht. AsterStudy bleibt das aktive Modul.

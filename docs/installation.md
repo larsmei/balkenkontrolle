@@ -55,6 +55,8 @@ Modul **AsterStudy** öffnen. Der Eintrag liegt unter
 
 **Werkzeuge → Erweiterungen → Balkenkontrolle (Orientierung und Querschnitt)**.
 
+Zusätzlich erscheint in der Befehlsleiste rechts neben den Stufen der Schalter **Balken**. Er zeigt die Balken der aktiven Studie und blendet sie wieder aus.
+
 Fehlt der Eintrag:
 
 * Liegt `salome_plugins.py` wirklich in dem Verzeichnis, das SALOME durchsucht, und nicht eine Ebene darüber?
