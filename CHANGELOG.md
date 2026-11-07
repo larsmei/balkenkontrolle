@@ -1,5 +1,9 @@
 # Änderungsprotokoll
 
+## 1.1.3 — 2026-11-07
+
+* **Anzeige entfernen** löscht das Kontrollnetz aus der Studie und aus der Ansicht. AsterStudy bleibt das aktive Modul.
+
 ## 1.1.2 — 2026-11-07
 
 * Kein ``import MEDCoupling`` mehr. Die Hülle in SALOME 9 beendet den Prozess mit ``_PyThreadState_Attach``. Zelltypen bleiben die festen Werte SEG2=1 und SEG3=2.

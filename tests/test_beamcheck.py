@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from beamcheck.aster_access import _live_gui, read_case
 from beamcheck.geomview import _extrude
+from beamcheck.smeshview import choose_roots, is_control_name
 from beamcheck.mesh_io import SEG2_TYPE, SEG3_TYPE, read_mail, segments_from_connectivity
 from beamcheck.surface import cap_triangles, extrude_shell
 from beamcheck.orientation import Orientation, beam_axis, local_frame
@@ -324,6 +325,23 @@ class AsterCaseTests(unittest.TestCase):
         getter.aster_gui = Gui()
         module.get_aster_gui = getter
         self.assertIsInstance(_live_gui([module]), Gui)
+
+
+class ClearSelectionTests(unittest.TestCase):
+    def test_removes_mesh_that_only_holds_control_groups(self):
+        nodes = [
+            ("0:1:2", "Balkenkontrolle_X", "0:1:8", False, ["Balkenkontrolle_X", "Balkenkontrolle_Y"]),
+            ("0:1:3", "Balkenkontrolle_Y", "0:1:8", False, ["Balkenkontrolle_X", "Balkenkontrolle_Y"]),
+        ]
+        self.assertEqual(choose_roots(nodes), ["0:1:8"])
+
+    def test_keeps_a_foreign_mesh_and_drops_only_the_group(self):
+        nodes = [
+            ("0:1:4", "Balkenkontrolle_X", "0:1:9", False, ["Balkenkontrolle_X", "Wand"]),
+        ]
+        self.assertEqual(choose_roots(nodes), ["0:1:4"])
+        self.assertTrue(is_control_name("Balkenkontrolle"))
+        self.assertFalse(is_control_name("Mesh_1"))
 
 
 if __name__ == "__main__":

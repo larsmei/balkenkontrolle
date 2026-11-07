@@ -65,6 +65,39 @@ def collect_faces(report, show_sections=True, show_axes=True, axis_fraction=0.22
     return [(name, grouped[name]) for name in order]
 
 
+def is_control_name(name):
+    text = name or ""
+    return text == MESH_NAME or text.startswith(MESH_NAME + "_")
+
+
+def choose_roots(nodes):
+    """Welche Objekte weg müssen.
+
+    ``nodes`` sind ``(entry, name, father_entry, father_is_component, sibling_names)``.
+    Ein Netz, das nur Kontrollgruppen trägt, wird ganz entfernt, auch wenn es
+    nicht ``Balkenkontrolle`` heißt. Einzelne Gruppen in einem fremden Netz bleiben
+    einzeln. Komponenten (Mesh, Geometry) werden nie entfernt.
+    """
+    roots = []
+    seen = set()
+    for entry, name, father, father_is_component, siblings in nodes:
+        if not is_control_name(name):
+            continue
+        target = entry
+        if (
+            not father_is_component
+            and father
+            and siblings
+            and all(is_control_name(item) for item in siblings)
+        ):
+            target = father
+        if target in seen:
+            continue
+        seen.add(target)
+        roots.append(target)
+    return roots
+
+
 def _color_of(name, section_index):
     if name in _AXIS_RGB:
         return _AXIS_RGB[name], 0.0
@@ -183,17 +216,12 @@ def _paint(entry, rgb, transparency):
                 pass
 
 
-def _show_in_asterstudy(entries, fit):
+def _refresh_view(fit):
     import salome
 
     sg = getattr(salome, "sg", None)
     if sg is None:
         return
-    for entry in entries:
-        try:
-            sg.Display(entry)
-        except Exception:
-            pass
     for name in ("UpdateView", "updateView"):
         fn = getattr(sg, name, None)
         if fn is None:
@@ -227,7 +255,6 @@ def _show_in_asterstudy(entries, fit):
         except Exception:
             pass
         break
-    # Anzeige eines SMESH-Netzes darf AsterStudy nicht verlassen.
     for name in ("activateModule", "ActivateModule"):
         fn = getattr(sg, name, None)
         if fn is None:
@@ -238,6 +265,20 @@ def _show_in_asterstudy(entries, fit):
             continue
         break
     _ping_asterstudy()
+
+
+def _show_in_asterstudy(entries, fit):
+    import salome
+
+    sg = getattr(salome, "sg", None)
+    if sg is None:
+        return
+    for entry in entries:
+        try:
+            sg.Display(entry)
+        except Exception:
+            pass
+    _refresh_view(fit)
 
 
 def _ping_asterstudy():
@@ -328,4 +369,134 @@ def publish(context, report, show_sections=True, show_axes=True, axis_fraction=0
         0,
         "AsterStudy: Netz {} mit {} Flächengruppen (X rot, Y grün, Z blau).".format(MESH_NAME, len(entries)),
     )
+    return notes
+
+
+def _child_sobjects(study, sobj, recursive):
+    iterator = study.NewChildIterator(sobj)
+    iterator.InitEx(recursive)
+    found = []
+    while iterator.More():
+        found.append(iterator.Value())
+        iterator.Next()
+    return found
+
+
+def _sobj_name(sobj):
+    try:
+        return sobj.GetName() or ""
+    except Exception:
+        return ""
+
+
+def _sobj_entry(sobj):
+    try:
+        return sobj.GetID() or ""
+    except Exception:
+        return ""
+
+
+def clear():
+    """Entfernt das Kontrollnetz aus Studie und Ansicht. AsterStudy bleibt aktiv."""
+    import salome
+
+    study = salome.myStudy
+    notes = []
+    entries_to_erase = []
+    described = []
+    by_entry = {}
+    for component_name in ("SMESH", "GEOM"):
+        component = study.FindComponent(component_name)
+        if component is None:
+            continue
+        component_entry = _sobj_entry(component)
+        for sobj in _child_sobjects(study, component, True):
+            name = _sobj_name(sobj)
+            if not is_control_name(name):
+                continue
+            entry = _sobj_entry(sobj)
+            if not entry:
+                continue
+            by_entry[entry] = sobj
+            entries_to_erase.append(entry)
+            father = None
+            try:
+                father = sobj.GetFather()
+            except Exception:
+                father = None
+            father_entry = _sobj_entry(father) if father is not None else ""
+            father_is_component = father_entry == component_entry or not father_entry
+            siblings = []
+            if father is not None and not father_is_component:
+                siblings = [_sobj_name(child) for child in _child_sobjects(study, father, False)]
+                if father_entry:
+                    by_entry.setdefault(father_entry, father)
+            described.append((entry, name, father_entry, father_is_component, siblings))
+    roots = choose_roots(described)
+    for entry in roots:
+        if entry not in entries_to_erase:
+            entries_to_erase.append(entry)
+    sg = getattr(salome, "sg", None)
+    if sg is not None:
+        for entry in entries_to_erase:
+            for method, args in (("Erase", (entry,)), ("erase", (entry,)), ("SetVisibility", (entry, False))):
+                fn = getattr(sg, method, None)
+                if fn is None:
+                    continue
+                try:
+                    fn(*args)
+                except Exception:
+                    continue
+    removed = 0
+    builder = study.NewBuilder()
+    for entry in roots:
+        sobj = by_entry.get(entry)
+        if sobj is None:
+            try:
+                sobj = study.FindObjectID(entry)
+            except Exception:
+                sobj = None
+        if sobj is None:
+            continue
+        name = _sobj_name(sobj) or MESH_NAME
+        done = False
+        obj = None
+        try:
+            obj = sobj.GetObject()
+        except Exception:
+            obj = None
+        if obj is not None:
+            try:
+                from salome.smesh import smeshBuilder
+
+                try:
+                    smesh = smeshBuilder.New()
+                except TypeError:
+                    smesh = smeshBuilder.New(study)
+                wrapped = obj
+                try:
+                    wrapped = smesh.Mesh(obj)
+                except Exception:
+                    wrapped = obj
+                smesh.RemoveMesh(wrapped)
+                done = True
+            except Exception:
+                done = False
+        if not done:
+            try:
+                builder.RemoveObjectWithChildren(sobj)
+                done = True
+            except Exception as exc:
+                notes.append("{} nicht entfernt: {}".format(name, exc))
+                continue
+        removed += 1
+    try:
+        study.Modified()
+    except Exception:
+        pass
+    _refresh_view(False)
+    if removed:
+        notes.insert(0, "Kontrolle entfernt ({} Objekte).".format(removed))
+    else:
+        notes.append("Keine Kontrollanzeige gefunden.")
     return notes

@@ -2,7 +2,7 @@
 
 Alle Maße stehen in denselben Einheiten wie das Netz, bei Code_Aster in der Regel Meter. Der Schwerpunkt des gezeichneten Schnitts liegt auf der Stabachse. `HY` läuft in lokalem Y, `HZ` in lokalem Z.
 
-In der AsterStudy-Ansicht entsteht das SMESH-Netz `Balkenkontrolle`. Pro Gruppe gibt es eine Flächengruppe `Balkenkontrolle_Querschnitt_…`, die Achsen liegen in `Balkenkontrolle_X`, `_Y` und `_Z`. Ein neuer Lauf ersetzt das Netz. GEOM wird nicht benutzt.
+In der AsterStudy-Ansicht entsteht das SMESH-Netz `Balkenkontrolle`. Pro Gruppe gibt es eine Flächengruppe `Balkenkontrolle_Querschnitt_…`, die Achsen liegen in `Balkenkontrolle_X`, `_Y` und `_Z`. Ein neuer Lauf ersetzt das Netz. **Anzeige entfernen** nimmt es wieder aus der Ansicht. GEOM wird nicht benutzt.
 
 Die Option **Entlang des Stabes** prismt den Schnitt über die Stablänge. Ohne sie liegt nur eine Scheibe in Stabmitte, plus die Achsen. Die Achslänge ist ein Anteil der Stablänge (Vorgabe 0,22), gemessen ab dem ersten Knoten.
 

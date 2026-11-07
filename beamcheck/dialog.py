@@ -113,10 +113,13 @@ def run_dialog(context):
             buttons = QtWidgets.QHBoxLayout()
             run = QtWidgets.QPushButton("Visualisieren")
             run.clicked.connect(self._run)
+            clear = QtWidgets.QPushButton("Anzeige entfernen")
+            clear.clicked.connect(self._clear)
             close = QtWidgets.QPushButton("Schließen")
             close.clicked.connect(self.reject)
             buttons.addStretch(1)
             buttons.addWidget(run)
+            buttons.addWidget(clear)
             buttons.addWidget(close)
             layout.addLayout(buttons)
 
@@ -252,6 +255,16 @@ def run_dialog(context):
                     self._say(note)
             except (CommError, MeshError) as exc:
                 self._say(str(exc))
+            except Exception:
+                self._say(traceback.format_exc())
+
+        def _clear(self):
+            self.log.clear()
+            try:
+                from beamcheck.smeshview import clear
+
+                for note in clear():
+                    self._say(note)
             except Exception:
                 self._say(traceback.format_exc())
 
