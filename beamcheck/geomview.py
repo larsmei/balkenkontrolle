@@ -95,6 +95,28 @@ def _remove_previous(study):
                 pass
 
 
+def _extrude(geompy, face, origin, direction, span):
+    """Prisma der Fläche entlang direction um span.
+
+    SALOME 9: MakePrism(base, point1, point2).
+    Ältere Stände nehmen MakePrismVecH(base, vector, höhe) oder MakePrism(base, vector).
+    """
+    end = tuple(origin[i] + direction[i] * span for i in range(3))
+    p1 = geompy.MakeVertex(*origin)
+    p2 = geompy.MakeVertex(*end)
+    try:
+        return geompy.MakePrism(face, p1, p2)
+    except TypeError:
+        pass
+    vec_h = getattr(geompy, "MakePrismVecH", None)
+    if callable(vec_h):
+        try:
+            return vec_h(face, geompy.MakeVectorDXDYDZ(*direction), span)
+        except TypeError:
+            pass
+    return geompy.MakePrism(face, geompy.MakeVector(p1, p2))
+
+
 def _wire(geompy, points):
     vertices = [geompy.MakeVertex(*point) for point in points]
     edges = []
@@ -262,11 +284,7 @@ def publish(context, report, show_sections=True, show_axes=True, axis_fraction=0
             ]
             try:
                 face = _face(geompy, outer, holes)
-                vector = geompy.MakeVector(
-                    geompy.MakeVertex(*origin),
-                    geompy.MakeVertex(*tuple(origin[i] + beam.ex[i] * span for i in range(3))),
-                )
-                prism = geompy.MakePrism(face, vector)
+                prism = _extrude(geompy, face, origin, beam.ex, span)
             except Exception as exc:
                 notes.append("{}: Querschnitt nicht erzeugt ({})".format(beam.name, exc))
                 prism = None

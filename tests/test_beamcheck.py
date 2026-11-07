@@ -8,6 +8,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from beamcheck.geomview import _extrude
 from beamcheck.mesh_io import read_mail
 from beamcheck.orientation import Orientation, beam_axis, local_frame
 from beamcheck.parser import parse_comm
@@ -177,6 +178,48 @@ FIN
         self.assertEqual(len(edges), 1)
         self.assertAlmostEqual(edges[0].p1[1], 1.0)
         self.assertEqual(edges[0].groups, ("P",))
+
+
+class _Recorder:
+    def __init__(self, prism):
+        self.prism = prism
+        self.calls = []
+
+    def MakeVertex(self, *point):
+        self.calls.append(("vertex", point))
+        return ("vertex", point)
+
+    def MakeVector(self, p1, p2):
+        self.calls.append(("vector", p1, p2))
+        return ("vector", p1, p2)
+
+    def MakeVectorDXDYDZ(self, *comps):
+        self.calls.append(("dxdydz", comps))
+        return ("dxdydz", comps)
+
+
+class ExtrudeTests(unittest.TestCase):
+    def test_salome9_two_points(self):
+        class Geom(_Recorder):
+            def MakePrism(self, base, p1, p2):
+                self.calls.append(("prism", base, p1, p2))
+                return self.prism
+
+        geom = Geom("solid")
+        self.assertEqual(_extrude(geom, "face", (0, 0, 0), (1, 0, 0), 2.0), "solid")
+        self.assertEqual(geom.calls[-1][0], "prism")
+        self.assertEqual(geom.calls[-1][2], ("vertex", (0, 0, 0)))
+        self.assertEqual(geom.calls[-1][3], ("vertex", (2.0, 0, 0)))
+
+    def test_legacy_vector(self):
+        class Geom(_Recorder):
+            def MakePrism(self, base, vector):
+                self.calls.append(("prism2", base, vector))
+                return self.prism
+
+        geom = Geom("solid")
+        self.assertEqual(_extrude(geom, "face", (0, 0, 1), (0, 0, 1), 3.0), "solid")
+        self.assertEqual(geom.calls[-1][0], "prism2")
 
 
 if __name__ == "__main__":
