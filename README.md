@@ -7,6 +7,20 @@ cross-sections from `AFFE_CARA_ELEM`, the way Code_Aster uses them for `POU_*`
 X is red, Y is green, Z is blue. The section lies in the local frame:
 HY along Y, HZ along Z, tubes through R and EP.
 
+## Screenshots
+
+The **Beams** button sits at the right of the AsterStudy commands toolbar.
+
+![Beams button on the AsterStudy toolbar](docs/images/toolbar.png)
+
+Sections and local axes in the AsterStudy view. The mesh is named `BeamCheck`.
+
+![Beam sections and axes in AsterStudy](docs/images/view.png)
+
+The dialog reads the current case or a command file plus a mesh.
+
+![Beam check dialog](docs/images/dialog.png)
+
 ## Rules
 
 * Local X points from the first node of the SEG2 to the second.
@@ -40,7 +54,7 @@ Restart SALOME, open AsterStudy, then
 
 **Tools → Extensions → Beam check (orientation and section)**.
 
-The menu bar of AsterStudy has a **Beams** button with an I-beam icon. One
+The commands toolbar of AsterStudy has a **Beams** button with an I-beam icon. One
 click shows the beams of the active study, the next hides them.
 
 In the dialog, use the current case or pick a command file and a mesh file
