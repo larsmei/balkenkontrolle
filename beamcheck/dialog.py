@@ -180,6 +180,12 @@ def run_dialog(context):
             if choice is not None:
                 _name, mesh = self._meshes[choice]
                 return edges_from_smesh(mesh), "SMESH:" + _name
+            # Liegt das Netz schon in der Studie, nicht noch einmal über
+            # MEDLoader öffnen. Der Import aus dem Plugin-Thread stürzt ab.
+            if not self.mesh_path.text().strip():
+                loaded = self._loaded_edges()
+                if loaded is not None:
+                    return loaded
             path = self.mesh_path.text().strip()
             if not path and file_refs and parsed.mesh_unite is not None:
                 for unit, candidate in file_refs:
@@ -209,6 +215,18 @@ def run_dialog(context):
             raise MeshError(
                 "Kein Netz gefunden. Ein SMESH-Netz wählen oder eine MED-/mail-Datei angeben."
             )
+
+        def _loaded_edges(self):
+            if len(self._meshes) != 1:
+                return None
+            name, mesh = self._meshes[0]
+            try:
+                edges = edges_from_smesh(mesh)
+            except MeshError:
+                return None
+            if not edges:
+                return None
+            return edges, "SMESH:" + name
 
         def _run(self):
             self.log.clear()

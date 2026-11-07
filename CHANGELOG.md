@@ -1,5 +1,10 @@
 # Änderungsprotokoll
 
+## 1.1.2 — 2026-11-07
+
+* Kein ``import MEDCoupling`` mehr. Die Hülle in SALOME 9 beendet den Prozess mit ``_PyThreadState_Attach``. Zelltypen bleiben die festen Werte SEG2=1 und SEG3=2.
+* Liegt genau ein Netz mit Kanten schon in der Studie, wird es verwendet. Die MED-Datei wird dann nicht ein zweites Mal geöffnet.
+
 ## 1.1.1 — 2026-11-07
 
 * Der geöffnete AsterStudy-Fall wird über `ASTERSTUDYGUI.get_aster_gui()` gelesen. `AsterGui.instance()` gibt es dort nicht, deshalb kam bisher „Kein AsterStudy-Fall“.

@@ -196,20 +196,11 @@ def segments_from_connectivity(coords, conn, cindex, groups_by_cell=None, names=
 
 
 def _segment_type_codes():
-    codes = {SEG2_TYPE, SEG3_TYPE}
-    for module_name in ("MEDCoupling", "medcoupling"):
-        try:
-            module = __import__(module_name)
-        except Exception:
-            continue
-        for label, fallback in (("NORM_SEG2", SEG2_TYPE), ("NORM_SEG3", SEG3_TYPE)):
-            value = getattr(module, label, None)
-            if value is not None:
-                try:
-                    codes.add(int(value))
-                except (TypeError, ValueError):
-                    pass
-    return codes
+    # NORM_SEG2 = 1, NORM_SEG3 = 2, unverändert seit MEDCoupling 6.
+    # ``import MEDCoupling`` darf hier nicht stehen: das ist in SALOME 9 nur
+    # noch eine Hülle um medcoupling und beendet den Prozess mit
+    # _PyThreadState_Attach.
+    return {SEG2_TYPE, SEG3_TYPE}
 
 
 def _groups_on_level(med_file, level):
