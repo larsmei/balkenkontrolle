@@ -1,5 +1,11 @@
 # Änderungsprotokoll
 
+## 1.1.1 — 2026-11-07
+
+* Der geöffnete AsterStudy-Fall wird über `ASTERSTUDYGUI.get_aster_gui()` gelesen. `AsterGui.instance()` gibt es dort nicht, deshalb kam bisher „Kein AsterStudy-Fall“.
+* Dateien der Stufe (MED, mail) kommen aus `handle2info`, auch relativ zum Studienordner. Eine SALOME-Entry wird als SMESH-Netz geöffnet.
+* „Visualisieren“ liest den Fall neu, statt einen leeren Stand vom Dialogstart zu verwenden.
+
 ## 1.1.0 — 2026-11-07
 
 * Darstellung in der AsterStudy-Ansicht als SMESH-Netz `Balkenkontrolle`. Das GEOM-Modul wird nicht mehr geöffnet.

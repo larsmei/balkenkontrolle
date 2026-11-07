@@ -131,7 +131,6 @@ def run_dialog(context):
                 except Exception as exc:
                     self._case = None
                     self._say("AsterStudy-Fall nicht lesbar: {}".format(exc))
-                    self.source.setCurrentIndex(1)
                 try:
                     self._meshes = list_smesh_meshes()
                 except Exception as exc:
@@ -168,8 +167,12 @@ def run_dialog(context):
                     raise CommError("Bitte eine comm-Datei wählen.")
                 with open(path, "r", encoding="utf-8", errors="replace") as handle:
                     return handle.read(), None
-            if not self._case:
-                raise CommError("Kein AsterStudy-Fall. Bitte Dateien wählen.")
+            from beamcheck.aster_access import current_case
+
+            try:
+                self._case = current_case()
+            except Exception as exc:
+                raise CommError("AsterStudy-Fall nicht lesbar: {}".format(exc))
             return self._case["text"], self._case.get("files") or []
 
         def _edges(self, parsed, file_refs):
@@ -193,6 +196,12 @@ def run_dialog(context):
                         path = candidate
                         break
             if path:
+                if not os.path.isfile(path):
+                    from beamcheck.aster_access import mesh_from_entry
+
+                    mesh = mesh_from_entry(path)
+                    if mesh is not None:
+                        return edges_from_smesh(mesh), "SMESH:" + path
                 return _read_mesh_file(path, parsed.mesh_format), path
             if len(self._meshes) == 1:
                 name, mesh = self._meshes[0]

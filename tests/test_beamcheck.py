@@ -8,6 +8,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from beamcheck.aster_access import _live_gui, read_case
 from beamcheck.geomview import _extrude
 from beamcheck.mesh_io import SEG2_TYPE, SEG3_TYPE, read_mail, segments_from_connectivity
 from beamcheck.surface import cap_triangles, extrude_shell
@@ -260,6 +261,69 @@ class MedAndShellTests(unittest.TestCase):
         self.assertEqual(len(caps), 8)
         area = sum(_tri_area(triangle) for triangle in caps)
         self.assertAlmostEqual(area, 0.30 * 0.40 - 0.20 * 0.24, places=6)
+
+
+class _Info:
+    def __init__(self, filename):
+        self.filename = filename
+
+
+class AsterCaseTests(unittest.TestCase):
+    def test_reads_current_case_and_unit_file(self):
+        class Stage:
+            handle2info = {20: _Info("rahmen.med")}
+
+            def get_text(self):
+                return "DEBUT()\nLIRE_MAILLAGE(UNITE=20)\nFIN()\n"
+
+        class Case:
+            stages = [Stage()]
+
+        class History:
+            current_case = Case()
+            folder = _BEISPIEL
+
+        class Study:
+            history = History()
+
+        class Gui:
+            def study(self):
+                return Study()
+
+        payload = read_case(Gui())
+        self.assertIn("LIRE_MAILLAGE", payload["text"])
+        self.assertEqual(payload["files"][0][0], 20)
+        self.assertTrue(payload["files"][0][1].endswith("rahmen.med"))
+
+    def test_live_gui_does_not_construct_a_second_one(self):
+        constructed = []
+
+        def get_aster_gui():
+            constructed.append(1)
+            return object()
+
+        class Module:
+            pass
+
+        module = Module()
+        module.get_aster_gui = get_aster_gui
+        self.assertIsNone(_live_gui([module]))
+        self.assertEqual(constructed, [])
+        get_aster_gui.aster_gui = "sentinel"
+
+        class Study:
+            pass
+
+        class Gui:
+            def study(self):
+                return Study()
+
+        def getter():
+            return Gui()
+
+        getter.aster_gui = Gui()
+        module.get_aster_gui = getter
+        self.assertIsInstance(_live_gui([module]), Gui)
 
 
 if __name__ == "__main__":
