@@ -23,7 +23,7 @@ import salome_pluginsmanager
 _TITLE = "Balkenkontrolle (Orientierung und Querschnitt)"
 _HELP = (
     "Zeigt lokale Balkenachsen (X rot, Y grün, Z blau) und die Querschnitte "
-    "aus AFFE_CARA_ELEM im GEOM-Modul. Regeln nach Code_Aster U4.42.01."
+    "aus AFFE_CARA_ELEM in der AsterStudy-Ansicht. Regeln nach Code_Aster U4.42.01."
 )
 
 

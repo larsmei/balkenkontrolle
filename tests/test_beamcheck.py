@@ -9,7 +9,8 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from beamcheck.geomview import _extrude
-from beamcheck.mesh_io import read_mail
+from beamcheck.mesh_io import SEG2_TYPE, SEG3_TYPE, read_mail, segments_from_connectivity
+from beamcheck.surface import cap_triangles, extrude_shell
 from beamcheck.orientation import Orientation, beam_axis, local_frame
 from beamcheck.parser import parse_comm
 from beamcheck.report import build_report
@@ -220,6 +221,45 @@ class ExtrudeTests(unittest.TestCase):
         geom = Geom("solid")
         self.assertEqual(_extrude(geom, "face", (0, 0, 1), (0, 0, 1), 3.0), "solid")
         self.assertEqual(geom.calls[-1][0], "prism2")
+
+
+def _tri_area(triangle):
+    a, b, c = triangle
+    return abs((b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1])) * 0.5
+
+
+class MedAndShellTests(unittest.TestCase):
+    def test_connectivity_skips_faces_and_keeps_group(self):
+        coords = [(0, 0, 0), (2, 0, 0), (0, 1, 0), (1, 0, 0)]
+        # SEG2 (Typ 1, Knoten 0-1), danach TRI3 (Typ 3).
+        conn = [SEG2_TYPE, 0, 1, 3, 0, 2, 3]
+        cindex = [0, 3, 7]
+        edges = segments_from_connectivity(coords, conn, cindex, {0: ["RIEGEL"]})
+        self.assertEqual(len(edges), 1)
+        self.assertEqual(edges[0].name, "1")
+        self.assertEqual(edges[0].groups, ("RIEGEL",))
+        self.assertEqual(edges[0].p2, (2, 0, 0))
+
+    def test_seg3_uses_the_far_ends(self):
+        coords = [(0, 0, 0), (1, 0, 0), (0.5, 0, 0)]
+        conn = [SEG3_TYPE, 0, 2, 1]
+        edges = segments_from_connectivity(coords, conn, [0, 4], names=["M7"])
+        self.assertEqual(len(edges), 1)
+        self.assertEqual(edges[0].name, "M7")
+        self.assertEqual({edges[0].p1, edges[0].p2}, {(0, 0, 0), (1, 0, 0)})
+
+    def test_solid_rectangle_shell(self):
+        outer = [(-0.15, -0.225), (0.15, -0.225), (0.15, 0.225), (-0.15, 0.225)]
+        shell = extrude_shell((0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1), 2.0, outer, [])
+        self.assertEqual(len(shell), 12)
+
+    def test_hollow_cap_keeps_the_opening(self):
+        outer = [(-0.15, -0.2), (0.15, -0.2), (0.15, 0.2), (-0.15, 0.2)]
+        hole = [(-0.1, -0.12), (0.1, -0.12), (0.1, 0.12), (-0.1, 0.12)]
+        caps = cap_triangles(outer, [list(reversed(hole))])
+        self.assertEqual(len(caps), 8)
+        area = sum(_tri_area(triangle) for triangle in caps)
+        self.assertAlmostEqual(area, 0.30 * 0.40 - 0.20 * 0.24, places=6)
 
 
 if __name__ == "__main__":

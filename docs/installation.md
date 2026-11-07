@@ -66,7 +66,7 @@ Fehlt der Eintrag:
 | Umgebung | Was gebraucht wird |
 | --- | --- |
 | Dialog | PyQt5, ersatzweise PyQt6, beides kommt mit SALOME |
-| Darstellung | Modul GEOM |
+| Darstellung | SMESH, sichtbar in der AsterStudy-Ansicht |
 | MED-Netz | MEDLoader, Teil von SALOME |
 | ASTER-mail | keine Zusatzbibliothek |
 | Unit-Tests | Python 3.7 oder neuer, ohne SALOME |

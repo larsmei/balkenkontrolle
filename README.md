@@ -2,7 +2,7 @@
 
 Plugin für **SALOME / AsterStudy**. Es zeigt vor der Rechnung, wie Code_Aster die Balken eines Falls orientiert und welchen Querschnitt `AFFE_CARA_ELEM` ihnen gibt.
 
-Seit dem Wegfall der Eficas-Vorschau fehlt diese Kontrolle im Modul. Das Plugin legt die Körper im Modul **GEOM** ab: lokale Achse X rot, Y grün, Z blau, der Querschnitt als Prisma entlang des Stabes.
+Seit dem Wegfall der Eficas-Vorschau fehlt diese Kontrolle im Modul. Das Plugin zeigt sie in der **Ansicht von AsterStudy** als SMESH-Netz `Balkenkontrolle`: lokale Achse X rot, Y grün, Z blau, der Querschnitt als Flächenschale entlang des Stabes. Das GEOM-Modul wird nicht geöffnet.
 
 Die Regeln folgen Code_Aster **U4.42.01** für gerade `POU_*`-Elemente auf `SEG2`.
 
@@ -23,7 +23,7 @@ SALOME neu starten. In AsterStudy:
 
 Liegt dort schon eine `salome_plugins.py`, diese Datei nicht überschreiben. Das Plugin in ein eigenes Verzeichnis legen und `SALOME_PLUGINS_PATH` setzen. Die drei Wege, der Hinweis zum bestehenden Plugin und die Laufzeitabhängigkeiten stehen in [docs/installation.md](docs/installation.md).
 
-Python 3.7 oder neuer. Im GUI werden PyQt5 (oder PyQt6) und GEOM erwartet, für MED-Dateien zusätzlich MEDLoader. Alles davon bringt SALOME mit.
+Python 3.7 oder neuer. Im GUI werden PyQt5 (oder PyQt6) und SMESH erwartet, für MED-Dateien zusätzlich MEDLoader. Alles davon bringt SALOME mit.
 
 ## Bedienung
 
@@ -33,12 +33,14 @@ Python 3.7 oder neuer. Im GUI werden PyQt5 (oder PyQt6) und GEOM erwartet, für 
 | comm- und Netzdatei | Dateien vom Rechner, MED oder ASTER-`.mail` |
 | SMESH-Netz | ein bereits geladenes Netz, Gruppen inklusive |
 
+MED-Dateien werden auf **allen** Zelldimensionen gelesen. Balken, die in derselben Datei unter einem Volumen- oder Flächennetz stehen, bleiben erhalten. Gruppen (`GROUP_MA`) kommen von der Ebene, auf der die SEG2/SEG3 liegen.
+
 Optionen im Dialog:
 
 * **Querschnitte** und **Achsen X Y Z** lassen sich getrennt schalten.
 * **Entlang des Stabes** prismt den Schnitt über die Länge. Sonst liegt eine Scheibe in der Mitte.
 * **Achslänge / Stablänge** setzt die Pfeillänge, Vorgabe 0,22.
-* **GEOM öffnen** wechselt nach dem Lauf in das GEOM-Modul.
+* **Ansicht einpassen** setzt die Kamera auf das Kontrollnetz. AsterStudy bleibt das aktive Modul.
 
 Die Körper heißen `Balkenkontrolle_…`. Ein neuer Lauf ersetzt den vorherigen. Hinweise (paralleler Vektor, Hohlprofil zugelaufen, `GENERALE` nur als Hülle) stehen im Textfeld des Dialogs.
 
@@ -87,7 +89,7 @@ Die Tests prüfen den Standardrahmen, den Sonderfall parallel zu Z, `ANGL_VRIL`,
 * `SEG3` wird über die Endknoten behandelt.
 * Diskrete Elemente ohne Balkenquerschnitt bleiben unsichtbar.
 * Der Winkel zwischen einer `VECT_MAIL_*`-Faser und den Hauptachsen eines allgemeinen Profils fehlt.
-* Sehr viele Stäbe werden zu einem Compound je Gruppe zusammengefasst. Einzelne GEOM-Objekte pro Stab gibt es nicht.
+* Die Flächen einer Gruppe liegen in einer SMESH-Gruppe. Einzelne Körper pro Stab gibt es nicht.
 
 ## Lizenz
 

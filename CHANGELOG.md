@@ -1,5 +1,10 @@
 # Änderungsprotokoll
 
+## 1.1.0 — 2026-11-07
+
+* Darstellung in der AsterStudy-Ansicht als SMESH-Netz `Balkenkontrolle`. Das GEOM-Modul wird nicht mehr geöffnet.
+* MED: SEG2/SEG3 werden auf allen nicht leeren Zelldimensionen gelesen, nicht nur auf der höchsten. Gruppen gehören zur Ebene der Balken. SEG3 nimmt die beiden Endknoten, auch wenn der Mittelknoten dazwischen steht.
+
 ## 1.0.1 — 2026-11-07
 
 * Querschnitte: `geomBuilder.MakePrism` wird mit Basis und zwei Punkten aufgerufen, wie in SALOME 9. Der vorherige Aufruf mit einem Vektor lief in `missing 1 required positional argument: 'thePoint2'`. Ältere Stände mit `MakePrismVecH` oder `MakePrism(base, vector)` bleiben nutzbar.

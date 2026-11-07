@@ -48,8 +48,8 @@ def run_dialog(context):
             layout = QtWidgets.QVBoxLayout(self)
             intro = QtWidgets.QLabel(
                 "Lokale Achsen und Querschnitte aus AFFE_CARA_ELEM, "
-                "nach U4.42.01. Die Körper erscheinen im GEOM-Modul "
-                "unter dem Namen Balkenkontrolle_."
+                "nach U4.42.01. Die Kontrolle erscheint in der AsterStudy-Ansicht "
+                "als Netz Balkenkontrolle, nicht im GEOM-Modul."
             )
             intro.setWordWrap(True)
             layout.addWidget(intro)
@@ -87,12 +87,12 @@ def run_dialog(context):
             self.axes.setChecked(True)
             self.solid = QtWidgets.QCheckBox("Entlang des Stabes")
             self.solid.setChecked(True)
-            self.activate = QtWidgets.QCheckBox("GEOM öffnen")
-            self.activate.setChecked(True)
+            self.fit = QtWidgets.QCheckBox("Ansicht einpassen")
+            self.fit.setChecked(True)
             options.addWidget(self.sections)
             options.addWidget(self.axes)
             options.addWidget(self.solid)
-            options.addWidget(self.activate)
+            options.addWidget(self.fit)
             layout.addLayout(options)
 
             scale_row = QtWidgets.QHBoxLayout()
@@ -153,7 +153,7 @@ def run_dialog(context):
 
         def _pick_mesh(self):
             path, _ = QtWidgets.QFileDialog.getOpenFileName(
-                self, "Netz", "", "Netz (*.med *.mail *.msh *.dat);;Alle (*)"
+                self, "Netz", "", "Netz (*.med *.rmed *.mail *.msh *.dat);;Alle (*)"
             )
             if path:
                 self.mesh_path.setText(path)
@@ -209,7 +209,7 @@ def run_dialog(context):
                 edges, origin = self._edges(parsed, file_refs)
                 self._say("Netz: {} ({} Kanten).".format(origin, len(edges)))
                 report = build_report(parsed, edges)
-                from beamcheck.geomview import publish
+                from beamcheck.smeshview import publish
 
                 notes = publish(
                     self.context,
@@ -218,7 +218,7 @@ def run_dialog(context):
                     show_axes=self.axes.isChecked(),
                     axis_fraction=float(self.fraction.value()),
                     solid=self.solid.isChecked(),
-                    activate_geom=self.activate.isChecked(),
+                    fit=self.fit.isChecked(),
                 )
                 self._say(report.summary())
                 for note in notes:
