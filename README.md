@@ -42,7 +42,7 @@ Optionen im Dialog:
 * **Achslänge / Stablänge** setzt die Pfeillänge, Vorgabe 0,22.
 * **Ansicht einpassen** setzt die Kamera auf das Kontrollnetz. AsterStudy bleibt das aktive Modul.
 
-In der Befehlsleiste von AsterStudy, rechts neben den Stufen, liegt der Schalter **Balken**. Er ist standardmäßig an, sobald die aktive Studie Balken enthält, und blendet sie wieder aus. Das Netz heißt `Balkenkontrolle`. Hinweise (paralleler Vektor, Hohlprofil zugelaufen, `GENERALE` nur als Hülle) stehen im Textfeld des Dialogs.
+In der Befehlsleiste von AsterStudy, rechts neben den Stufen, liegt der Schalter **Balken**. Er ist standardmäßig an, sobald die aktive Studie Balken enthält, und blendet sie wieder aus. Das Netz heißt `Balkenkontrolle`. Hinweise (paralleler Vektor, Hohlprofil zugelaufen, `GENERALE` als Vollellipse aus IY und IZ) stehen im Textfeld des Dialogs.
 
 ## Orientierung
 
@@ -62,7 +62,7 @@ Ausführlich, inklusive Surcharge und `INCLUDE`: [docs/orientierung.md](docs/ori
 | --- | --- |
 | `RECTANGLE` | Vollquerschnitt `HY` × `HZ`, mit `EPY`/`EPZ` als Hohlkasten |
 | `CERCLE` | Vollkreis über `R`, mit `EP` < `R` als Rohr |
-| `GENERALE` | nur die Hülle ±`RY`, ±`RZ`, nicht das Fertigprofil |
+| `GENERALE` | Vollellipse mit denselben `IY` und `IZ` |
 | `COUDE` | Nenngeometrie, gerade zwischen den Endknoten, ohne Ovalisierung |
 
 `HY` liegt auf lokalem Y, `HZ` auf lokalem Z. Details und die Flächenformeln: [docs/querschnitte.md](docs/querschnitte.md).

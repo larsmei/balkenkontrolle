@@ -39,9 +39,9 @@ Die Drehung um die Stabachse ändert einen konzentrischen Kreis nicht. Die Achse
 
 ## GENERALE
 
-`SECTION='GENERALE'` hat in der comm-Datei keine Kontur, sondern Flächenwerte und Trägheiten (`A`, `IY`, `IZ`, `AY`, `AZ`, `JX`, `RY`, `RZ`, …).
+`SECTION='GENERALE'` hat keine Kontur, sondern Trägheitswerte. Gezeichnet wird ein elliptischer Vollquerschnitt, dessen Biegeträgheiten genau die angegebenen `IY` und `IZ` sind.
 
-Gezeichnet wird nur die elliptische Hülle mit Halbachsen `RY` und `RZ`. Das ist nicht das Fertigprofil. Das Protokoll sagt das. Fehlen `RY` und `RZ` oder sind sie nicht positiv, erscheinen nur die Achsen.
+`IY` ist das Trägheitsmoment um die lokale Y-Achse (∫ z² dA), `IZ` das um die lokale Z-Achse (∫ y² dA). Die Halbachse entlang Y folgt aus `IZ`, die entlang Z aus `IY`. `RY` und `RZ` sind Faserabstände und werden nicht als Kontur benutzt. Fehlen `IY` oder `IZ` oder sind sie nicht positiv, erscheinen nur die Achsen.
 
 ## COUDE
 

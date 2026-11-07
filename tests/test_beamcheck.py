@@ -24,7 +24,7 @@ from beamcheck.surface import cap_triangles, extrude_shell
 from beamcheck.orientation import Orientation, beam_axis, local_frame
 from beamcheck.parser import parse_comm
 from beamcheck.report import build_report
-from beamcheck.sections import circle_profile, rectangle_profile
+from beamcheck.sections import circle_profile, ellipse_semiaxes, general_profile, rectangle_profile
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _BEISPIEL = os.path.join(os.path.dirname(_HERE), "beispiele")
@@ -405,6 +405,24 @@ class GroupMembershipTests(unittest.TestCase):
         self.assertEqual(membership[1], ["topbeam"])
         self.assertEqual(membership[2], ["topbeam", "vertb"])
         self.assertNotIn(9, membership)
+
+
+class EllipseTests(unittest.TestCase):
+    def test_solid_ellipse_reproduces_iy_and_iz(self):
+        iy = 1.2e-4
+        iz = 3.4e-5
+        profile = general_profile(iy, iz)
+        self.assertEqual(profile.holes, [])
+        self.assertGreater(len(profile.outer), 8)
+        self.assertAlmostEqual(profile.iy, iy, delta=iy * 1e-9)
+        self.assertAlmostEqual(profile.iz, iz, delta=iz * 1e-9)
+        a, b = ellipse_semiaxes(iy, iz)
+        self.assertAlmostEqual(max(p[0] for p in profile.outer), a, places=6)
+        self.assertAlmostEqual(max(p[1] for p in profile.outer), b, places=6)
+
+    def test_equal_inertias_are_a_circle(self):
+        a, b = ellipse_semiaxes(2.5e-3, 2.5e-3)
+        self.assertAlmostEqual(a, b, places=9)
 
 
 if __name__ == "__main__":

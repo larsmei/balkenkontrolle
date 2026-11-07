@@ -1,5 +1,9 @@
 # Änderungsprotokoll
 
+## 1.1.6 — 2026-11-07
+
+* `SECTION='GENERALE'` wird als elliptischer Vollquerschnitt gezeichnet. Die Halbachsen sind so gewählt, dass `IY` und `IZ` mit den Angaben des Balkens übereinstimmen.
+
 ## 1.1.5 — 2026-11-07
 
 * Der Schalter **Balken** wird nur noch einmal eingehängt. Vorhandene Doppelgänger werden entfernt.

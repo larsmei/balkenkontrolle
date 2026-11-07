@@ -114,26 +114,55 @@ def circle_profile(radius, ep=None, count=48):
     return Profile("CERCLE", _ring(radius, count), holes, warnings, area, inertia, inertia, label)
 
 
-def general_profile(ry, rz, count=48):
-    """Hüllellipse aus den Faserabständen RY, RZ. Kein echtes Profil."""
-    warnings = [
-        "SECTION='GENERALE' hat keine Kontur. Gezeigt wird die Hülle ±RY, ±RZ, nicht das Fertigprofil."
-    ]
-    if ry is None or rz is None or float(ry) <= 0 or float(rz) <= 0:
-        warnings.append("Ohne positive RY und RZ kann keine Hülle gezeichnet werden. Nur die Achsen erscheinen.")
-        return Profile("GENERALE", [], warnings=warnings, label="GENERALE ohne Hülle")
-    ry = float(ry)
-    rz = float(rz)
-    outer = []
+def ellipse_semiaxes(iy, iz):
+    """Halbachsen einer Vollellipse mit diesen Biegeträgheiten.
+
+    a liegt auf der lokalen Y-Achse, b auf der lokalen Z-Achse.
+    IY = ∫ z² dA = π/4 · a · b³, IZ = ∫ y² dA = π/4 · a³ · b.
+    """
+    iy = float(iy)
+    iz = float(iz)
+    if not (iy > 0.0 and iz > 0.0):
+        return None
+    a = ((4.0 / math.pi) * math.sqrt(iz**3 / iy)) ** 0.25
+    b = ((4.0 / math.pi) * math.sqrt(iy**3 / iz)) ** 0.25
+    return a, b
+
+
+def _ellipse(a, b, count):
+    pts = []
     for i in range(count):
         ang = 2.0 * math.pi * i / count
-        outer.append((ry * math.cos(ang), rz * math.sin(ang)))
+        pts.append((a * math.cos(ang), b * math.sin(ang)))
+    return pts
+
+
+def general_profile(iy, iz, count=48):
+    """Vollellipse mit denselben IY und IZ. Kein Fertigprofil."""
+    warnings = [
+        "SECTION='GENERALE' hat keine Kontur. Gezeigt wird eine Vollellipse mit denselben IY und IZ."
+    ]
+    try:
+        axes = ellipse_semiaxes(iy, iz) if iy is not None and iz is not None else None
+    except (TypeError, ValueError):
+        axes = None
+    if axes is None:
+        warnings.append(
+            "Ohne positive IY und IZ kann die Ellipse nicht gezeichnet werden. Nur die Achsen erscheinen."
+        )
+        return Profile("GENERALE", [], warnings=warnings, label="GENERALE ohne IY/IZ")
+    a, b = axes
+    iy_v = math.pi / 4.0 * a * b**3
+    iz_v = math.pi / 4.0 * a**3 * b
     return Profile(
         "GENERALE",
-        outer,
+        _ellipse(a, b, count),
         [],
         warnings,
-        label="Hülle RY={:.4g} RZ={:.4g}".format(ry, rz),
+        math.pi * a * b,
+        iy_v,
+        iz_v,
+        "Ellipse IY={:.4g} IZ={:.4g}".format(float(iy), float(iz)),
     )
 
 
@@ -149,7 +178,8 @@ def profile_from_cara(section, values):
             return Profile("CERCLE", [], warnings=["CERCLE ohne R."], label="Kreis unvollständig")
         return circle_profile(values["R"], values.get("EP"))
     if section == "GENERALE":
-        return general_profile(values.get("RY"), values.get("RZ"))
+        folded = {str(key).upper(): value for key, value in values.items()}
+        return general_profile(folded.get("IY"), folded.get("IZ"))
     if section == "COUDE":
         warnings_prefix = "COUDE: Ovalisierung wird nicht dargestellt, nur die Nenngeometrie."
         if "R" in values:
