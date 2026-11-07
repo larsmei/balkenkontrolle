@@ -1,78 +1,10 @@
-"""Schalter in der Befehlsleiste von AsterStudy, rechts neben den Stufen."""
+"""Schalter „Balken“ in der Menüleiste von AsterStudy."""
 
 from __future__ import annotations
 
+ACTION_ID = 19050
 _BUTTON = "balkenkontrolle.toggle"
-_state = {"on": None, "button": None, "busy": False}
-
-
-def _alive(widget):
-    if widget is None:
-        return False
-    try:
-        import sip
-
-        if sip.isdeleted(widget):
-            return False
-    except Exception:
-        pass
-    try:
-        widget.objectName()
-    except RuntimeError:
-        return False
-    return True
-
-
-def _buttons():
-    _QtCore, QtWidgets = _qt()
-    app = QtWidgets.QApplication.instance()
-    if app is None:
-        return []
-    found = []
-    seen = set()
-    for widget in app.allWidgets():
-        if not isinstance(widget, QtWidgets.QToolButton):
-            continue
-        if widget.objectName() != _BUTTON and widget.text() != "Balken":
-            continue
-        if not _alive(widget) or id(widget) in seen:
-            continue
-        seen.add(id(widget))
-        found.append(widget)
-    held = _state.get("button")
-    if _alive(held) and id(held) not in seen:
-        found.append(held)
-    return found
-
-
-def _detach(button):
-    _QtCore, QtWidgets = _qt()
-    toolbar = button.parent()
-    while toolbar is not None and not isinstance(toolbar, QtWidgets.QToolBar):
-        toolbar = toolbar.parent()
-    if isinstance(toolbar, QtWidgets.QToolBar):
-        for action in list(toolbar.actions()):
-            if toolbar.widgetForAction(action) is button:
-                toolbar.removeAction(action)
-                break
-    try:
-        button.hide()
-        button.setParent(None)
-        button.deleteLater()
-    except Exception:
-        pass
-
-
-def _keep_one():
-    buttons = _buttons()
-    if not buttons:
-        _state["button"] = None
-        return None
-    keep = buttons[0]
-    for extra in buttons[1:]:
-        _detach(extra)
-    _state["button"] = keep
-    return keep
+_state = {"on": None, "hooked": False, "busy": False}
 
 
 def select_toolbar(items):
@@ -97,40 +29,137 @@ def select_toolbar(items):
 
 def _qt():
     try:
-        from PyQt5 import QtCore, QtWidgets
+        from PyQt5 import QtWidgets
     except ImportError:
-        from PyQt6 import QtCore, QtWidgets
-    return QtCore, QtWidgets
+        from PyQt6 import QtWidgets
+    return QtWidgets
+
+
+def _sg():
+    try:
+        from asterstudy.gui.salomegui_utils import get_salome_pyqt
+
+        return get_salome_pyqt()
+    except Exception:
+        import SalomePyQt
+
+        return SalomePyQt.SalomePyQt()
 
 
 def _toolbars():
-    QtCore, QtWidgets = _qt()
+    QtWidgets = _qt()
     app = QtWidgets.QApplication.instance()
     if app is None:
         return []
     found = []
     for widget in app.topLevelWidgets():
         try:
-            bars = widget.findChildren(QtWidgets.QToolBar)
+            found.extend(widget.findChildren(QtWidgets.QToolBar))
         except Exception:
             continue
-        found.extend(bars)
     return found
 
 
-def _existing_button():
-    return _keep_one()
+def _is_balken(action):
+    try:
+        return action.text().replace("&", "").strip() == "Balken"
+    except Exception:
+        return False
+
+
+def _menu_has(bar, action):
+    if bar is None:
+        return False
+    try:
+        actions = bar.actions()
+    except Exception:
+        return False
+    for item in actions:
+        if item is action or _is_balken(item):
+            return True
+        try:
+            menu = item.menu()
+        except Exception:
+            menu = None
+        if menu is None:
+            continue
+        for sub in menu.actions():
+            if sub is action or _is_balken(sub):
+                return True
+    return False
+
+
+def _on_commands_toolbar(action):
+    for toolbar in _toolbars():
+        name = ""
+        try:
+            name = toolbar.objectName() or ""
+        except Exception:
+            name = ""
+        if "CommandsToolbar" not in name:
+            continue
+        try:
+            if action in toolbar.actions():
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def _drop_legacy_buttons():
+    """Entfernt die früher per addWidget gesetzten Doppelgänger."""
+    QtWidgets = _qt()
+    app = QtWidgets.QApplication.instance()
+    if app is None:
+        return
+    for widget in app.allWidgets():
+        if not isinstance(widget, QtWidgets.QToolButton):
+            continue
+        try:
+            marked = widget.objectName() == _BUTTON
+        except Exception:
+            continue
+        if not marked:
+            continue
+        parent = widget.parent()
+        while parent is not None and not isinstance(parent, QtWidgets.QToolBar):
+            parent = parent.parent()
+        if isinstance(parent, QtWidgets.QToolBar):
+            for item in list(parent.actions()):
+                try:
+                    if parent.widgetForAction(item) is widget:
+                        parent.removeAction(item)
+                except Exception:
+                    continue
+        try:
+            widget.hide()
+            widget.deleteLater()
+        except Exception:
+            pass
+
+
+def _ensure_action(sg):
+    action = None
+    try:
+        action = sg.action(ACTION_ID)
+    except Exception:
+        action = None
+    if action is None:
+        tip = "Balken der aktiven Studie ein- oder ausblenden"
+        try:
+            action = sg.createAction(ACTION_ID, "Balken", tip, tip, "", 0, True)
+        except TypeError:
+            action = sg.createAction(ACTION_ID, "Balken", tip, tip, "")
+    action.setText("Balken")
+    action.setToolTip("Balken der aktiven Studie ein- oder ausblenden")
+    action.setCheckable(True)
+    return action
 
 
 def _on_toggled(checked):
     if _state.get("busy"):
         return
     _state["on"] = bool(checked)
-    button = _state.get("button")
-    if not _alive(button):
-        button = _keep_one()
-    if button is not None:
-        button.blockSignals(True)
     _state["busy"] = True
     try:
         if checked:
@@ -143,19 +172,22 @@ def _on_toggled(checked):
             clear()
     except Exception as exc:
         _state["on"] = False
-        if button is not None:
-            button.setChecked(False)
+        try:
+            action = _ensure_action(_sg())
+            action.blockSignals(True)
+            action.setChecked(False)
+            action.blockSignals(False)
+        except Exception:
+            pass
         if not _state.get("quiet"):
             _warn(str(exc))
     finally:
         _state["busy"] = False
         _state["quiet"] = False
-        if button is not None and _alive(button):
-            button.blockSignals(False)
 
 
 def _warn(text):
-    _QtCore, QtWidgets = _qt()
+    QtWidgets = _qt()
     QtWidgets.QMessageBox.warning(None, "Balkenkontrolle", text)
 
 
@@ -172,48 +204,89 @@ def _want_on():
     return bool(parsed.beam_groups or parsed.all_edges_are_beams or parsed.sections)
 
 
-def _try_install():
-    if _state.get("busy"):
-        return _keep_one() is not None
-    if _keep_one() is not None:
-        return True
-    items = []
+def _hook(action):
+    if _state.get("hooked"):
+        return
+    action.toggled.connect(_on_toggled)
+    _state["hooked"] = True
+    if _want_on() and not action.isChecked():
+        _state["quiet"] = True
+        action.setChecked(True)
+
+
+def _aster_active(sg):
+    try:
+        return sg.getActiveComponent() == "ASTERSTUDY"
+    except Exception:
+        return False
+
+
+def _on_any_toolbar(action):
     for toolbar in _toolbars():
         try:
-            name = toolbar.objectName() or ""
+            if action in toolbar.actions():
+                return True
         except Exception:
-            name = ""
-        try:
-            from PyQt5.QtWidgets import QComboBox
-        except ImportError:
-            from PyQt6.QtWidgets import QComboBox
-        try:
-            count = len(toolbar.findChildren(QComboBox))
-        except Exception:
-            count = 0
-        items.append((name, count, toolbar))
-    toolbar = select_toolbar(items)
-    if toolbar is None:
+            continue
+    return False
+
+
+def _try_install():
+    sg = _sg()
+    if not _aster_active(sg):
         return False
-    _QtCore, QtWidgets = _qt()
-    button = QtWidgets.QToolButton(toolbar)
-    button.setObjectName(_BUTTON)
-    button.setText("Balken")
-    button.setToolTip("Balken der aktiven Studie ein- oder ausblenden")
-    button.setCheckable(True)
-    button.setAutoRaise(True)
+    action = _ensure_action(sg)
+    _state["action"] = action
+    _hook(action)
     try:
-        button.setToolButtonStyle(_QtCore.Qt.ToolButtonTextOnly)
+        bar = sg.getMainMenuBar()
+    except Exception:
+        bar = None
+    if bar is not None and not _menu_has(bar, action):
+        bar.addAction(action)
+    if not _state.get("tool_added") and not _on_any_toolbar(action):
+        try:
+            sg.createTool(ACTION_ID, "CommandsToolbar")
+            _state["tool_added"] = True
+        except Exception:
+            pass
+    return bar is not None and _menu_has(bar, action)
+
+
+def _qt_core():
+    try:
+        from PyQt5 import QtCore
+    except ImportError:
+        from PyQt6 import QtCore
+    return QtCore
+
+
+def _retry(left):
+    if left <= 0:
+        return
+    try:
+        _try_install()
     except Exception:
         pass
-    toolbar.addSeparator()
-    toolbar.addWidget(button)
-    _state["button"] = button
-    button.toggled.connect(_on_toggled)
-    if _want_on():
-        _state["quiet"] = True
-        button.setChecked(True)
-    return True
+    action = _state.get("action")
+    if action is not None and _on_any_toolbar(action):
+        try:
+            if _menu_has(_sg().getMainMenuBar(), action):
+                return
+        except Exception:
+            return
+    _qt_core().QTimer.singleShot(700, lambda: _retry(left - 1))
+
+
+def ensure_toolbar():
+    """Setzt den Schalter in die Menüleiste, sobald AsterStudy aktiv ist."""
+    try:
+        _drop_legacy_buttons()
+        _wrap_activate()
+        if not _try_install():
+            _retry(40)
+    except Exception:
+        pass
 
 
 def _wrap_activate():
@@ -235,26 +308,3 @@ def _wrap_activate():
 
     wrapped._balkenkontrolle = True
     ASTERSTUDYGUI.activate = wrapped
-
-
-def _retry(left):
-    if _existing_button() is not None or left <= 0:
-        return
-    try:
-        _try_install()
-    except Exception:
-        pass
-    if _existing_button() is not None:
-        return
-    QtCore, _QtWidgets = _qt()
-    QtCore.QTimer.singleShot(700, lambda: _retry(left - 1))
-
-
-def ensure_toolbar():
-    """Hängt den Schalter an, sobald die Befehlsleiste existiert."""
-    try:
-        _wrap_activate()
-        if not _try_install():
-            _retry(12)
-    except Exception:
-        pass

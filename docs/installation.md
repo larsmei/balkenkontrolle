@@ -55,7 +55,7 @@ Modul **AsterStudy** öffnen. Der Eintrag liegt unter
 
 **Werkzeuge → Erweiterungen → Balkenkontrolle (Orientierung und Querschnitt)**.
 
-Zusätzlich erscheint in der Befehlsleiste rechts neben den Stufen der Schalter **Balken**. Er zeigt die Balken der aktiven Studie und blendet sie wieder aus.
+In der Menüleiste von AsterStudy steht der Schalter **Balken**. Ein Klick zeigt die Balken der aktiven Studie, der nächste blendet sie aus.
 
 Fehlt der Eintrag:
 

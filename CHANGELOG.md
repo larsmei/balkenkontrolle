@@ -1,5 +1,9 @@
 # Änderungsprotokoll
 
+## 1.1.7 — 2026-11-07
+
+* Der Schalter **Balken** steht in der Menüleiste von AsterStudy. Die frühere Anheftung an eine Werkzeugleiste hat SALOME verworfen, deshalb war er nicht sichtbar.
+
 ## 1.1.6 — 2026-11-07
 
 * `SECTION='GENERALE'` wird als elliptischer Vollquerschnitt gezeichnet. Die Halbachsen sind so gewählt, dass `IY` und `IZ` mit den Angaben des Balkens übereinstimmen.
