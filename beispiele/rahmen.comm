@@ -1,0 +1,37 @@
+DEBUT(LANG='FR')
+
+MAIL = LIRE_MAILLAGE(UNITE=20, FORMAT='ASTER')
+
+MODELE = AFFE_MODELE(
+    MAILLAGE=MAIL,
+    AFFE=_F(
+        GROUP_MA=('STUETZE', 'RIEGEL', 'TRAVERSE', 'VERBAND'),
+        PHENOMENE='MECANIQUE',
+        MODELISATION='POU_D_T',
+    ),
+)
+
+# Stützen: VECT_Y = globales X, damit HY in X und HZ in Y liegt.
+# Riegel: ANGL_VRIL = 0, also der Standardrahmen (lokales Z = globales Z).
+# Traversen und Verband ohne ORIENTATION: ebenfalls Standardrahmen.
+
+CARA = AFFE_CARA_ELEM(
+    MODELE=MODELE,
+    POUTRE=(
+        _F(GROUP_MA='STUETZE', SECTION='RECTANGLE', CARA=('HY', 'HZ'), VALE=(0.30, 0.45)),
+        _F(GROUP_MA='RIEGEL', SECTION='RECTANGLE', CARA=('HY', 'HZ'), VALE=(0.18, 0.42)),
+        _F(
+            GROUP_MA='TRAVERSE',
+            SECTION='RECTANGLE',
+            CARA=('HY', 'HZ', 'EPY', 'EPZ'),
+            VALE=(0.16, 0.32, 0.012, 0.012),
+        ),
+        _F(GROUP_MA='VERBAND', SECTION='CERCLE', CARA=('R', 'EP'), VALE=(0.060, 0.005)),
+    ),
+    ORIENTATION=(
+        _F(GROUP_MA='STUETZE', CARA='VECT_Y', VALE=(1.0, 0.0, 0.0)),
+        _F(GROUP_MA='RIEGEL', CARA='ANGL_VRIL', VALE=0.0),
+    ),
+)
+
+FIN()

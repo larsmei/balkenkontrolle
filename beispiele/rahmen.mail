@@ -1,0 +1,35 @@
+TITRE
+Balkenkontrolle Rahmen
+FINSF
+COOR_3D
+A  0.0  0.0  0.0
+B  0.0  0.0  4.0
+C  8.0  0.0  4.0
+D  8.0  0.0  0.0
+E  0.0  5.0  0.0
+F  0.0  5.0  4.0
+G  8.0  5.0  4.0
+H  8.0  5.0  0.0
+FINSF
+SEG2
+SAB  A B
+SDC  D C
+SEF  E F
+SHG  H G
+SBC  B C
+SFG  F G
+SBF  B F
+SCG  C G
+SBG  B G
+FINSF
+GROUP_MA
+STUETZE
+SAB SDC SEF SHG
+RIEGEL
+SBC SFG
+TRAVERSE
+SBF SCG
+VERBAND
+SBG
+FINSF
+FIN
