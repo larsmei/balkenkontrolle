@@ -406,30 +406,142 @@ def read_med(path):
     raise MeshError("Keine Balkenkanten (SEG2/SEG3) in der MED-Datei. {}".format(detail).strip())
 
 
+def _as_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def edge_membership(groups, edge_ids, edge_type):
+    """Welche Kante in welchen Gruppen liegt.
+
+    ``groups`` sind ``(name, typ, ids)``. Der Typvergleich über ``==`` scheitert
+    in SALOME 9 am SWIG-Enum, deshalb wird beides als Zahl verglichen. Eine
+    Gruppe, deren Nummern Kanten sind, zählt auch dann, wenn der Typ abweicht.
+    """
+    membership = {}
+    edges = set(edge_ids)
+    for name, gtype, ids in groups:
+        label = (name or "").strip()
+        if not label:
+            continue
+        numbers = []
+        for eid in ids or ():
+            number = _as_int(eid)
+            if number is not None:
+                numbers.append(number)
+        gtype = _as_int(gtype)
+        if gtype is not None and edge_type is not None and gtype != edge_type:
+            numbers = [number for number in numbers if number in edges]
+        for number in numbers:
+            if number not in edges:
+                continue
+            bucket = membership.setdefault(number, [])
+            if label not in bucket:
+                bucket.append(label)
+    return membership
+
+
+def _group_ids(group):
+    for method in ("GetIDs", "GetListOfID"):
+        fn = getattr(group, method, None)
+        if not callable(fn):
+            continue
+        try:
+            return list(fn())
+        except Exception:
+            continue
+    return []
+
+
+def _collect_smesh_groups(mesh):
+    found = []
+    seen = set()
+
+    def add(group):
+        if group is None:
+            return
+        key = id(group)
+        if key in seen:
+            return
+        seen.add(key)
+        found.append(group)
+
+    try:
+        import SMESH
+    except ImportError:
+        SMESH = None
+    getters = []
+    if SMESH is not None:
+        getters.append(lambda: mesh.GetGroups(SMESH.EDGE))
+    getters.append(lambda: mesh.GetGroups())
+    for getter in getters:
+        try:
+            for group in getter() or []:
+                add(group)
+        except Exception:
+            continue
+    try:
+        names = list(mesh.GetGroupNames() or [])
+    except Exception:
+        names = []
+    for name in names:
+        try:
+            matches = mesh.GetGroupByName(name) or []
+        except Exception:
+            continue
+        for group in matches:
+            add(group)
+    try:
+        import salome
+
+        obj = mesh.GetMesh() if hasattr(mesh, "GetMesh") else mesh
+        sobj = salome.ObjectToSObject(obj)
+        if sobj is not None:
+            iterator = salome.myStudy.NewChildIterator(sobj)
+            iterator.InitEx(True)
+            while iterator.More():
+                child = iterator.Value()
+                iterator.Next()
+                try:
+                    add(child.GetObject())
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    return found
+
+
 def edges_from_smesh(mesh):
-    """Kanten eines geladenen SMESH-Netzes, Gruppen über GetGroups."""
+    """Kanten eines geladenen SMESH-Netzes, inklusive Gruppenmitgliedschaft."""
     try:
         import SMESH
     except ImportError as exc:
         raise MeshError("SMESH ist nicht importierbar ({}).".format(exc)) from exc
-    membership = {}
-    for group in mesh.GetGroups():
-        try:
-            if group.GetType() != SMESH.EDGE:
-                continue
-            gname = group.GetName()
-            for eid in group.GetIDs():
-                membership.setdefault(int(eid), []).append(gname)
-        except Exception:
-            continue
-    edges = []
+    edge_ids = []
     for eid in mesh.GetElementsByType(SMESH.EDGE):
+        edge_ids.append(int(eid))
+    described = []
+    for group in _collect_smesh_groups(mesh):
+        try:
+            gtype = group.GetType()
+        except Exception:
+            gtype = None
+        try:
+            gname = group.GetName()
+        except Exception:
+            gname = ""
+        described.append((gname, gtype, _group_ids(group)))
+    membership = edge_membership(described, edge_ids, _as_int(SMESH.EDGE))
+    edges = []
+    for eid in edge_ids:
         nodes = list(mesh.GetElemNodes(eid))
         if len(nodes) < 2:
             continue
         p1 = tuple(mesh.GetNodeXYZ(nodes[0]))
         p2 = tuple(mesh.GetNodeXYZ(nodes[1]))
-        edges.append(Edge(str(eid), p1, p2, tuple(membership.get(int(eid), ()))))
+        edges.append(Edge(str(eid), p1, p2, tuple(membership.get(eid, ()))))
     if not edges:
         raise MeshError("Das SMESH-Netz enthält keine Kanten.")
     return edges

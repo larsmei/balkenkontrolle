@@ -1,5 +1,10 @@
 # Änderungsprotokoll
 
+## 1.1.5 — 2026-11-07
+
+* Der Schalter **Balken** wird nur noch einmal eingehängt. Vorhandene Doppelgänger werden entfernt.
+* Kantengruppen am SMESH-Netz werden auch gelesen, wenn der Typvergleich von SALOME 9 scheitert. Dadurch zählen `POU_D_T`-Gruppen wie `topbeam` wieder als Balken.
+
 ## 1.1.4 — 2026-11-07
 
 * Schalter **Balken** in der Befehlsleiste, rechts neben den Stufen. Er visualisiert die Balkenelemente der aktiven Studie und blendet sie wieder aus.

@@ -149,6 +149,9 @@ def build_report(parsed, edges):
                 warnings=warnings,
             )
         )
+    if not report.beams and known_groups:
+        shown = ", ".join(sorted(known_groups)[:8])
+        report.warnings.append("Gruppen im Netz: {}.".format(shown))
     # Doppelte Gruppen-Hinweise entfernen, Reihenfolge halten.
     seen = set()
     unique = []

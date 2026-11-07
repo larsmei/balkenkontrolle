@@ -3,7 +3,76 @@
 from __future__ import annotations
 
 _BUTTON = "balkenkontrolle.toggle"
-_state = {"on": None}
+_state = {"on": None, "button": None, "busy": False}
+
+
+def _alive(widget):
+    if widget is None:
+        return False
+    try:
+        import sip
+
+        if sip.isdeleted(widget):
+            return False
+    except Exception:
+        pass
+    try:
+        widget.objectName()
+    except RuntimeError:
+        return False
+    return True
+
+
+def _buttons():
+    _QtCore, QtWidgets = _qt()
+    app = QtWidgets.QApplication.instance()
+    if app is None:
+        return []
+    found = []
+    seen = set()
+    for widget in app.allWidgets():
+        if not isinstance(widget, QtWidgets.QToolButton):
+            continue
+        if widget.objectName() != _BUTTON and widget.text() != "Balken":
+            continue
+        if not _alive(widget) or id(widget) in seen:
+            continue
+        seen.add(id(widget))
+        found.append(widget)
+    held = _state.get("button")
+    if _alive(held) and id(held) not in seen:
+        found.append(held)
+    return found
+
+
+def _detach(button):
+    _QtCore, QtWidgets = _qt()
+    toolbar = button.parent()
+    while toolbar is not None and not isinstance(toolbar, QtWidgets.QToolBar):
+        toolbar = toolbar.parent()
+    if isinstance(toolbar, QtWidgets.QToolBar):
+        for action in list(toolbar.actions()):
+            if toolbar.widgetForAction(action) is button:
+                toolbar.removeAction(action)
+                break
+    try:
+        button.hide()
+        button.setParent(None)
+        button.deleteLater()
+    except Exception:
+        pass
+
+
+def _keep_one():
+    buttons = _buttons()
+    if not buttons:
+        _state["button"] = None
+        return None
+    keep = buttons[0]
+    for extra in buttons[1:]:
+        _detach(extra)
+    _state["button"] = keep
+    return keep
 
 
 def select_toolbar(items):
@@ -50,19 +119,19 @@ def _toolbars():
 
 
 def _existing_button():
-    QtCore, QtWidgets = _qt()
-    for toolbar in _toolbars():
-        for button in toolbar.findChildren(QtWidgets.QToolButton):
-            if button.objectName() == _BUTTON:
-                return button
-    return None
+    return _keep_one()
 
 
 def _on_toggled(checked):
+    if _state.get("busy"):
+        return
     _state["on"] = bool(checked)
-    button = _existing_button()
+    button = _state.get("button")
+    if not _alive(button):
+        button = _keep_one()
     if button is not None:
         button.blockSignals(True)
+    _state["busy"] = True
     try:
         if checked:
             from beamcheck.control import visualize_active
@@ -79,8 +148,9 @@ def _on_toggled(checked):
         if not _state.get("quiet"):
             _warn(str(exc))
     finally:
+        _state["busy"] = False
         _state["quiet"] = False
-        if button is not None:
+        if button is not None and _alive(button):
             button.blockSignals(False)
 
 
@@ -103,7 +173,9 @@ def _want_on():
 
 
 def _try_install():
-    if _existing_button() is not None:
+    if _state.get("busy"):
+        return _keep_one() is not None
+    if _keep_one() is not None:
         return True
     items = []
     for toolbar in _toolbars():
@@ -136,6 +208,7 @@ def _try_install():
         pass
     toolbar.addSeparator()
     toolbar.addWidget(button)
+    _state["button"] = button
     button.toggled.connect(_on_toggled)
     if _want_on():
         _state["quiet"] = True

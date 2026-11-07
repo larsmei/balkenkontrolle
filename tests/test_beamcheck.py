@@ -13,7 +13,13 @@ from beamcheck.control import needed_groups, rank_meshes
 from beamcheck.geomview import _extrude
 from beamcheck.toolbar import select_toolbar
 from beamcheck.smeshview import choose_roots, is_control_name
-from beamcheck.mesh_io import SEG2_TYPE, SEG3_TYPE, read_mail, segments_from_connectivity
+from beamcheck.mesh_io import (
+    SEG2_TYPE,
+    SEG3_TYPE,
+    edge_membership,
+    read_mail,
+    segments_from_connectivity,
+)
 from beamcheck.surface import cap_triangles, extrude_shell
 from beamcheck.orientation import Orientation, beam_axis, local_frame
 from beamcheck.parser import parse_comm
@@ -386,6 +392,19 @@ class ToolbarChoiceTests(unittest.TestCase):
         self.assertEqual(ranked[0][0], "Rahmen")
         self.assertEqual(ranked[0][2], 1)
         self.assertTrue(all(name != "Balkenkontrolle" for name, _mesh, _score in ranked))
+
+
+class GroupMembershipTests(unittest.TestCase):
+    def test_keeps_edge_ids_when_the_enum_does_not_match(self):
+        # Typ 3 wäre eine Fläche, die Nummern sind aber Kanten.
+        membership = edge_membership(
+            [("topbeam", 3, [1, 2]), ("vertb", 2, [2]), ("Knoten", 1, [9])],
+            [1, 2],
+            2,
+        )
+        self.assertEqual(membership[1], ["topbeam"])
+        self.assertEqual(membership[2], ["topbeam", "vertb"])
+        self.assertNotIn(9, membership)
 
 
 if __name__ == "__main__":
